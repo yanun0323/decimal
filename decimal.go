@@ -140,19 +140,36 @@ func (d Decimal) Truncate(i int) Decimal {
 	return Decimal(d[:p])
 }
 
-// SatoshiToDecimal convert satoshi to decimal.
+// Shift shifts the decimal in base 10.
+// It shifts left when shift is positive and right if shift is negative.
+// In simpler terms, the given value for shift is added to the exponent
+// of the decimal.
 //
 // Example:
 //
 //	d, _ := decimal.NewDecimal("3")
-//	d.SatoshiToDecimal().String() // "300000000"
-func (d Decimal) SatoshiToDecimal() Decimal {
+//	d.Shift(3).String()  // "3000"
+//	d.Shift(-3).String() // "0.003"
+func (d Decimal) Shift(shift int) Decimal {
 	s := string(d)
 	switch s {
 	case "0", "0.", "0.0":
 		return "0"
 	}
 
+	if shift == 0 {
+		return d
+	}
+
+	if shift > 0 {
+		return shiftPositive(string(d), shift)
+	}
+
+	return shiftNegative(string(d), -shift)
+}
+
+// shiftPositive shifts decimal left. example: 3 to 300
+func shiftPositive(s string, shift int) Decimal {
 	ss := strings.Split(s, ".")
 
 	var isMinus bool
@@ -163,64 +180,54 @@ func (d Decimal) SatoshiToDecimal() Decimal {
 
 	switch len(ss) {
 	case 1:
-		buf := make([]byte, 0, len(ss[0])+8)
-		if len(ss[0]) <= 8 {
+		return Decimal(getMinusString(isMinus) + ss[0] + strings.Repeat("0", shift))
+	case 2:
+		prefix, suffix := []byte(ss[0]), append([]byte(ss[1]), bytes.Repeat([]byte{'0'}, shift)...)
+		buf := make([]byte, 0, len(prefix)+len(suffix)+1)
+		buf = append(buf, prefix...)
+		buf = append(buf, suffix[:shift]...)
+		buf = append(buf, '.')
+		buf = append(buf, suffix[shift:]...)
+		return Decimal(getMinusString(isMinus) + cleanZero(buf))
+	default:
+		return "0"
+	}
+}
+
+// shiftNegative shifts decimal left. example: 3 to 0.03
+func shiftNegative(s string, shift int) Decimal {
+	ss := strings.Split(s, ".")
+
+	var isMinus bool
+	if len(ss[0]) != 0 && ss[0][0] == '-' {
+		isMinus = true
+		ss[0] = ss[0][1:]
+	}
+
+	switch len(ss) {
+	case 1:
+		buf := make([]byte, 0, len(ss[0])+shift)
+		if len(ss[0]) <= shift {
 			buf = append(buf, '0', '.')
-			buf = append(buf, []byte(strings.Repeat("0", 8-len(ss[0])))...)
+			buf = append(buf, []byte(strings.Repeat("0", shift-len(ss[0])))...)
 			buf = append(buf, ss[0]...)
 		} else {
-			buf = append(buf, ss[0][:len(ss[0])-8]...)
+			buf = append(buf, ss[0][:len(ss[0])-shift]...)
 			buf = append(buf, '.')
-			buf = append(buf, ss[0][len(ss[0])-8:]...)
+			buf = append(buf, ss[0][len(ss[0])-shift:]...)
 		}
 		return Decimal(getMinusString(isMinus) + cleanZero(buf))
 	case 2:
-		prefix, suffix := append([]byte("00000000"), ss[0]...), []byte(ss[1])
+		zeros := bytes.Repeat([]byte{'0'}, shift)
+		prefix, suffix := append(zeros, ss[0]...), []byte(ss[1])
 		buf := make([]byte, 0, len(prefix)+len(suffix)+1)
-		buf = append(buf, prefix[:len(prefix)-8]...)
+		buf = append(buf, prefix[:len(prefix)-shift]...)
 		buf = append(buf, '.')
-		buf = append(buf, prefix[len(prefix)-8:]...)
+		buf = append(buf, prefix[len(prefix)-shift:]...)
 		buf = append(buf, suffix...)
 		return Decimal(getMinusString(isMinus) + cleanZero(buf))
 	default:
 		return Decimal("0")
-	}
-}
-
-// DecimalToSatoshi convert decimal to satoshi.
-//
-// Example:
-//
-//	d, _ := decimal.NewDecimal("300_000_000")
-//	d.DecimalToSatoshi().String() // "3"
-func (d Decimal) DecimalToSatoshi() Decimal {
-	s := string(d)
-	switch s {
-	case "0", "0.", "0.0":
-		return "0"
-	}
-
-	ss := strings.Split(s, ".")
-
-	var isMinus bool
-	if len(ss[0]) != 0 && ss[0][0] == '-' {
-		isMinus = true
-		ss[0] = ss[0][1:]
-	}
-
-	switch len(ss) {
-	case 1:
-		return Decimal(getMinusString(isMinus) + ss[0] + "00000000")
-	case 2:
-		prefix, suffix := []byte(ss[0]), append([]byte(ss[1]), "00000000"...)
-		buf := make([]byte, 0, len(prefix)+len(suffix)+1)
-		buf = append(buf, prefix...)
-		buf = append(buf, suffix[:8]...)
-		buf = append(buf, '.')
-		buf = append(buf, suffix[8:]...)
-		return Decimal(getMinusString(isMinus) + cleanZero(buf))
-	default:
-		return "0"
 	}
 }
 

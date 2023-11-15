@@ -575,49 +575,60 @@ func (su *DecimalSuite) TestDecimalSub() {
 	}
 }
 
-func Test_DecimalDecimalToSatoshi(t *testing.T) {
+func Test_Shift(t *testing.T) {
 	testCases := []struct {
 		input    string
+		shift    int
 		expected string
 	}{
 		{
 			input:    "100",
+			shift:    8,
 			expected: "10000000000",
 		},
 		{
 			input:    "100.123456789",
+			shift:    8,
 			expected: "10012345678.9",
 		},
 		{
 			input:    "100.12345678",
+			shift:    8,
 			expected: "10012345678",
 		},
 		{
 			input:    "0.123456789",
+			shift:    8,
 			expected: "12345678.9",
 		},
 		{
 			input:    "0.12345",
+			shift:    8,
 			expected: "12345000",
 		},
 		{
 			input:    "-100",
+			shift:    8,
 			expected: "-10000000000",
 		},
 		{
 			input:    "-100.123456789",
+			shift:    8,
 			expected: "-10012345678.9",
 		},
 		{
 			input:    "-100.12345678",
+			shift:    8,
 			expected: "-10012345678",
 		},
 		{
 			input:    "-0.123456789",
+			shift:    8,
 			expected: "-12345678.9",
 		},
 		{
 			input:    "-0.12345",
+			shift:    8,
 			expected: "-12345000",
 		},
 	}
@@ -627,81 +638,7 @@ func Test_DecimalDecimalToSatoshi(t *testing.T) {
 			t.Log(tc.input)
 			result, err := NewDecimal(tc.input)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expected, result.DecimalToSatoshi().String())
-		})
-	}
-}
-
-func Test_DecimalSatoshiToDecimal(t *testing.T) {
-	testCases := []struct {
-		input    string
-		expected string
-	}{
-		{
-			input:    "10000000000",
-			expected: "100",
-		},
-		{
-			input:    "1",
-			expected: "0.00000001",
-		},
-		{
-			input:    "10012345678.9",
-			expected: "100.123456789",
-		},
-		{
-			input:    "10012345678",
-			expected: "100.12345678",
-		},
-		{
-			input:    "12345678.9",
-			expected: "0.123456789",
-		},
-		{
-			input:    "123456789",
-			expected: "1.23456789",
-		},
-		{
-			input:    "12345000",
-			expected: "0.12345",
-		},
-		{
-			input:    "-10000000000",
-			expected: "-100",
-		},
-		{
-			input:    "-1",
-			expected: "-0.00000001",
-		},
-		{
-			input:    "-10012345678.9",
-			expected: "-100.123456789",
-		},
-		{
-			input:    "-10012345678",
-			expected: "-100.12345678",
-		},
-		{
-			input:    "-12345678.9",
-			expected: "-0.123456789",
-		},
-		{
-			input:    "-123456789",
-			expected: "-1.23456789",
-		},
-		{
-			input:    "-12345000",
-			expected: "-0.12345",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.input, func(t *testing.T) {
-			t.Log(tc.input)
-			result, err := NewDecimal(tc.input)
-			t.Log(result.String())
-			require.NoError(t, err)
-			assert.Equal(t, tc.expected, result.SatoshiToDecimal().String())
+			assert.Equal(t, tc.expected, result.Shift(tc.shift).String())
 		})
 	}
 }

@@ -29,10 +29,11 @@ func Benchmark_Calculate_Decimal(b *testing.B) {
 		result := b.Add(a).Sub(b)
 		ss := result.String()
 		_ = ss
+
 	}
 }
 
-func Benchmark_Calculate_DecimalString(b *testing.B) {
+func Benchmark_Calculate_StringDecimal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		b, _ := NewDecimal(_operatorBase)
 		a, _ := NewDecimal(_operatorAddition)
@@ -43,13 +44,15 @@ func Benchmark_Calculate_DecimalString(b *testing.B) {
 
 // Shifting
 
-func Benchmark_Shift_DecimalString(b *testing.B) {
+// TODO: Shift Decimal
+
+func Benchmark_Shift_StringDecimal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		d, _ := NewDecimal(_operatorBase)
-		s := d.DecimalToSatoshi()
+		s := d.Shift(8)
 		_ = s
 		d2, _ := NewDecimal(_operatorBase)
-		s2 := d2.DecimalToSatoshi()
+		s2 := d2.Shift(-8)
 		_ = s2
 	}
 }
