@@ -44,7 +44,16 @@ func Benchmark_Calculate_StringDecimal(b *testing.B) {
 
 // Shifting
 
-// TODO: Shift Decimal
+func Benchmark_Shift_Decimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d, _ := decimal.NewFromString(_operatorBase)
+		s := d.Shift(8).String()
+		_ = s
+		d2, _ := decimal.NewFromString(_operatorBase)
+		s2 := d2.Shift(-8).String()
+		_ = s2
+	}
+}
 
 func Benchmark_Shift_StringDecimal(b *testing.B) {
 	for i := 0; i < b.N; i++ {

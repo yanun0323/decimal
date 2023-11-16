@@ -57,12 +57,12 @@ func NewDecimal(s string) (Decimal, error) {
 		b = buf[i]
 		droppable, valid := isSymbolDroppable[b]
 		if !valid {
-			return "", errors.New(fmt.Sprintf("invalid symbol (%s) in %s", string(b), s))
+			return Decimal("0"), errors.New(fmt.Sprintf("invalid symbol (%s) in %s", string(b), s))
 		}
 
 		if b == '.' {
 			if dot {
-				return "", errors.New("duplicate dot")
+				return Decimal("0"), errors.New("duplicate dot")
 			}
 			dot = true
 		}
@@ -74,7 +74,7 @@ func NewDecimal(s string) (Decimal, error) {
 	}
 
 	if len(buf) == 0 {
-		return "", errors.New("can't convert to Decimal empty string")
+		return Decimal("0"), errors.New("can't convert to Decimal empty string")
 	}
 
 	inserted, _ := findOrInsertDecimalPoint(buf)
@@ -154,7 +154,7 @@ func (d Decimal) Shift(shift int) Decimal {
 	s := string(d)
 	switch s {
 	case "0", "0.", "0.0":
-		return "0"
+		return Decimal("0")
 	}
 
 	if shift == 0 {
@@ -239,7 +239,7 @@ func shiftNegative(s string, shift int) Decimal {
 //	d2, _ := decimal.NewDecimal("90.99")
 //	d1.Add(d2).String() // "190.01"
 func (base Decimal) Add(addition Decimal) Decimal {
-	b, a := []byte(base), []byte(addition)
+	b, a := []byte(base), []byte(addition.String())
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
 	if baseNegative && additionNegative {
@@ -265,7 +265,7 @@ func (base Decimal) Add(addition Decimal) Decimal {
 //	d2, _ := decimal.NewDecimal("90.99")
 //	d1.Sub(d2).String() // "9.01"
 func (base Decimal) Sub(subtraction Decimal) Decimal {
-	b, a := []byte(base), []byte(subtraction)
+	b, a := []byte(base), []byte(subtraction.String())
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
 	if baseNegative && additionNegative {

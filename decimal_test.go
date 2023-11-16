@@ -631,6 +631,81 @@ func Test_Shift(t *testing.T) {
 			shift:    8,
 			expected: "-12345000",
 		},
+		{
+			input:    "10000000000",
+			shift:    -8,
+			expected: "100",
+		},
+		{
+			input:    "1",
+			shift:    -8,
+			expected: "0.00000001",
+		},
+		{
+			input:    "10012345678.9",
+			shift:    -8,
+			expected: "100.123456789",
+		},
+		{
+			input:    "10012345678",
+			shift:    -8,
+			expected: "100.12345678",
+		},
+		{
+			input:    "12345678.9",
+			shift:    -8,
+			expected: "0.123456789",
+		},
+		{
+			input:    "123456789",
+			shift:    -8,
+			expected: "1.23456789",
+		},
+		{
+			input:    "12345000",
+			shift:    -8,
+			expected: "0.12345",
+		},
+		{
+			input:    "-10000000000",
+			shift:    -8,
+			expected: "-100",
+		},
+		{
+			input:    "-1",
+			shift:    -8,
+			expected: "-0.00000001",
+		},
+		{
+			input:    "-1",
+			shift:    -2,
+			expected: "-0.01",
+		},
+		{
+			input:    "-10012345678.9",
+			shift:    -6,
+			expected: "-10012.3456789",
+		},
+		{
+			input:    "-10012345678",
+			shift:    -8,
+			expected: "-100.12345678",
+		},
+		{
+			input:    "-12345678.9",
+			shift:    -8,
+			expected: "-0.123456789",
+		},
+		{
+			input:    "-123456789",
+			shift:    -8,
+			expected: "-1.23456789",
+		},
+		{
+			input:    "-12345000",
+			shift:    -8,
+			expected: "-0.12345",
+		},
 	}
 
 	for _, tc := range testCases {
