@@ -82,7 +82,7 @@ func New(s string) (Decimal, error) {
 	}
 
 	inserted, _ := findOrInsertDecimalPoint(buf)
-	return Decimal(cleanZero(inserted)), nil
+	return Decimal(tidy(inserted)), nil
 }
 
 // Require returns a new Decimal from a string representation or panics if New would have returned an error.
@@ -105,7 +105,7 @@ type Decimal string
 
 // String return string from Decimal
 func (d Decimal) String() string {
-	d = tidy(d)
+	d = blanker(d)
 	return string(d)
 }
 
@@ -118,7 +118,7 @@ func (d Decimal) String() string {
 //	d, _ := decimal.New("123.456")
 //	d.Truncate(2).String() // "123.45"
 func (d Decimal) Truncate(i int) Decimal {
-	d = tidy(d)
+	d = blanker(d)
 	if i < 0 {
 		return d
 	}
@@ -157,7 +157,7 @@ func (d Decimal) Truncate(i int) Decimal {
 //	d.Shift(3).String()  // "3000"
 //	d.Shift(-3).String() // "0.003"
 func (d Decimal) Shift(shift int) Decimal {
-	d = tidy(d)
+	d = blanker(d)
 	s := string(d)
 	switch s {
 	case "0", "0.", "0.0":
@@ -187,15 +187,15 @@ func shiftPositive(s string, shift int) Decimal {
 
 	switch len(ss) {
 	case 1:
-		return Decimal(getMinusString(isMinus) + ss[0] + strings.Repeat("0", shift))
+		return Decimal(prefix(isMinus) + ss[0] + strings.Repeat("0", shift))
 	case 2:
-		prefix, suffix := []byte(ss[0]), append([]byte(ss[1]), bytes.Repeat([]byte{'0'}, shift)...)
-		buf := make([]byte, 0, len(prefix)+len(suffix)+1)
-		buf = append(buf, prefix...)
-		buf = append(buf, suffix[:shift]...)
+		prefixes, suffixes := []byte(ss[0]), append([]byte(ss[1]), bytes.Repeat([]byte{'0'}, shift)...)
+		buf := make([]byte, 0, len(prefixes)+len(suffixes)+1)
+		buf = append(buf, prefixes...)
+		buf = append(buf, suffixes[:shift]...)
 		buf = append(buf, '.')
-		buf = append(buf, suffix[shift:]...)
-		return Decimal(getMinusString(isMinus) + cleanZero(buf))
+		buf = append(buf, suffixes[shift:]...)
+		return Decimal(prefix(isMinus) + tidy(buf))
 	default:
 		return "0"
 	}
@@ -223,16 +223,16 @@ func shiftNegative(s string, shift int) Decimal {
 			buf = append(buf, '.')
 			buf = append(buf, ss[0][len(ss[0])-shift:]...)
 		}
-		return Decimal(getMinusString(isMinus) + cleanZero(buf))
+		return Decimal(prefix(isMinus) + tidy(buf))
 	case 2:
 		zeros := bytes.Repeat([]byte{'0'}, shift)
-		prefix, suffix := append(zeros, ss[0]...), []byte(ss[1])
-		buf := make([]byte, 0, len(prefix)+len(suffix)+1)
-		buf = append(buf, prefix[:len(prefix)-shift]...)
+		prefixes, suffixes := append(zeros, ss[0]...), []byte(ss[1])
+		buf := make([]byte, 0, len(prefixes)+len(suffixes)+1)
+		buf = append(buf, prefixes[:len(prefixes)-shift]...)
 		buf = append(buf, '.')
-		buf = append(buf, prefix[len(prefix)-shift:]...)
-		buf = append(buf, suffix...)
-		return Decimal(getMinusString(isMinus) + cleanZero(buf))
+		buf = append(buf, prefixes[len(prefixes)-shift:]...)
+		buf = append(buf, suffixes...)
+		return Decimal(prefix(isMinus) + tidy(buf))
 	default:
 		return Decimal("0")
 	}
@@ -246,8 +246,8 @@ func shiftNegative(s string, shift int) Decimal {
 //	d2, _ := decimal.New("90.99")
 //	d1.Add(d2).String() // "190.01"
 func (base Decimal) Add(addition Decimal) Decimal {
-	base = tidy(base)
-	addition = tidy(addition)
+	base = blanker(base)
+	addition = blanker(addition)
 
 	b, a := []byte(base), []byte(addition.String())
 	baseNegative := b[0] == '-'
@@ -275,8 +275,8 @@ func (base Decimal) Add(addition Decimal) Decimal {
 //	d2, _ := decimal.New("90.99")
 //	d1.Sub(d2).String() // "9.01"
 func (base Decimal) Sub(subtraction Decimal) Decimal {
-	base = tidy(base)
-	subtraction = tidy(subtraction)
+	base = blanker(base)
+	subtraction = blanker(subtraction)
 
 	b, a := []byte(base), []byte(subtraction.String())
 	baseNegative := b[0] == '-'
@@ -355,7 +355,7 @@ func unsignedAdd(base, addition []byte) string {
 		result = append(result, reversed[i])
 	}
 
-	return cleanZero(result)
+	return tidy(result)
 }
 
 // unsignedSub subtract two unsigned string with shifting
@@ -443,7 +443,7 @@ func unsignedSub(base, subtraction []byte) string {
 		result = append(result, reversed[i])
 	}
 
-	return cleanZero(result)
+	return tidy(result)
 }
 
 // findOrInsertDecimalPoint find the index of decimal point. (if no decimal point, it will insert it into the end of the number)
@@ -463,8 +463,8 @@ func findOrInsertDecimalPoint(num []byte) ([]byte, int) {
 	return num, p
 }
 
-// clean the zero and dot of prefix and suffix
-func cleanZero(num []byte) string {
+// clean the zero and dot of prefixes and suffixes
+func tidy(num []byte) string {
 	if len(num) == 0 {
 		return "0"
 	}
@@ -504,14 +504,16 @@ func max(a, b int) int {
 	return b
 }
 
-func getMinusString(isMinus bool) string {
+// prefix return '-' when isMinus is true, return "" when isMinus is false
+func prefix(isMinus bool) string {
 	if isMinus {
 		return "-"
 	}
 	return ""
 }
 
-func tidy(d Decimal) Decimal {
+// blanker makes sure Decimal is not empty string
+func blanker(d Decimal) Decimal {
 	if len(d) == 0 {
 		return Decimal("0")
 	}
@@ -520,49 +522,152 @@ func tidy(d Decimal) Decimal {
 
 // IsZero return true if the Decimal is zero
 func (d Decimal) IsZero() bool {
-	d = tidy(d)
-	return d.String() == "0"
+	return len(d) == 0 || d.String() == "0"
 }
 
 // IsPositive return true if the Decimal is greater than zero
 func (d Decimal) IsPositive() bool {
-	d = tidy(d)
 	return d[0] != '-' && !d.IsZero()
 }
 
 // IsNegative return true if the Decimal is less than zero
 func (d Decimal) IsNegative() bool {
-	d = tidy(d)
 	return d[0] == '-'
 }
 
 // Equal return true if the Decimal is equal to inputted Decimal
 func (d Decimal) Equal(d2 Decimal) bool {
-	d = tidy(d)
-	d2 = tidy(d2)
-	return d.Sub(d2).IsZero()
+	return blanker(d) == blanker(d2)
 }
 
 // Greater return true if the Decimal is greater than inputted Decimal
 func (d Decimal) Greater(d2 Decimal) bool {
-	result := d.Sub(d2)
-	return result.IsPositive() && !result.IsZero()
+	return greater(blanker(d), blanker(d2))
+}
+
+// greater return true if the d1 is greater than d2
+//
+//	example: 1234.001 vs 12.00001
+//	1234.001**
+//	**12.00001
+//	^ // <- pointer go backward
+//	example: 1234.00001 vs 12.1
+//	1234.00001
+//	**12.1****
+//	^ // <- pointer go backward
+func greater(d1, d2 Decimal) bool {
+	if d1.IsPositive() && d2.IsNegative() {
+		return true
+	}
+
+	if d1.IsNegative() && d2.IsPositive() {
+		return false
+	}
+
+	fb := []byte(d1)
+	sb := []byte(d2)
+	if fb[0] == '-' {
+		fb = fb[1:]
+		sb = sb[1:]
+	}
+	f, fDecimalPoint := findOrInsertDecimalPoint(fb)
+	s, sDecimalPoint := findOrInsertDecimalPoint(sb)
+
+	maxLenAfterDecimalPoint := max(len(f)-fDecimalPoint-1, len(s)-sDecimalPoint-1)
+
+	if fDecimalPoint != sDecimalPoint {
+		return fDecimalPoint > sDecimalPoint
+	}
+
+	count := fDecimalPoint + maxLenAfterDecimalPoint + 1
+	for i := 0; i < count; i++ {
+		if len(f) == i {
+			return false
+		}
+
+		if len(s) == i {
+			return true
+		}
+
+		if f[i] == '.' {
+			continue
+		}
+
+		if f[i] != s[i] {
+			return f[i] > s[i]
+		}
+	}
+
+	return false
 }
 
 // Less return true if the Decimal is less than inputted Decimal
 func (d Decimal) Less(d2 Decimal) bool {
-	result := d.Sub(d2)
-	return result.IsNegative() && !result.IsZero()
+	return less(blanker(d), blanker(d2))
+}
+
+// less return true if the d1 is less than d2
+//
+//	example: 1234.001 vs 12.00001
+//	1234.001**
+//	**12.00001
+//	^ // <- pointer go backward
+//	example: 1234.00001 vs 12.1
+//	1234.00001
+//	**12.1****
+//	^ // <- pointer go backward
+func less(d1, d2 Decimal) bool {
+	if d1.IsNegative() && d2.IsPositive() {
+		return true
+	}
+
+	if d1.IsPositive() && d2.IsNegative() {
+		return false
+	}
+
+	fb := []byte(d1)
+	sb := []byte(d2)
+	if fb[0] == '-' {
+		fb = fb[1:]
+		sb = sb[1:]
+	}
+	f, fDecimalPoint := findOrInsertDecimalPoint(fb)
+	s, sDecimalPoint := findOrInsertDecimalPoint(sb)
+
+	maxLenAfterDecimalPoint := max(len(f)-fDecimalPoint-1, len(s)-sDecimalPoint-1)
+
+	if fDecimalPoint != sDecimalPoint {
+		return fDecimalPoint < sDecimalPoint
+	}
+
+	count := fDecimalPoint + maxLenAfterDecimalPoint + 1
+	for i := 0; i < count; i++ {
+		if len(f) == i {
+			return true
+		}
+
+		if len(s) == i {
+			return false
+		}
+
+		if f[i] == '.' {
+			continue
+		}
+
+		if f[i] != s[i] {
+			return f[i] < s[i]
+		}
+	}
+
+	return false
 }
 
 // GreaterOrEqual return true if the Decimal is greater or equal to inputted Decimal
 func (d Decimal) GreaterOrEqual(d2 Decimal) bool {
-	result := d.Sub(d2)
-	return result.IsPositive() || result.IsZero()
+	return d.Equal(d2) || d.Greater(d2)
 }
 
 // LessOrEqual return true if the Decimal is less or equal to inputted Decimal
 func (d Decimal) LessOrEqual(d2 Decimal) bool {
-	result := d.Sub(d2)
-	return result.IsNegative() || result.IsZero()
+	return d.Equal(d2) || d.Less(d2)
 }

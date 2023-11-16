@@ -89,3 +89,105 @@ func BenchmarkTruncateDecimal(b *testing.B) {
 		_ = s2
 	}
 }
+
+// IsZero
+
+func BenchmarkIsZeroShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := decimal.NewFromString(_operatorBase)
+		_ = d1.IsZero()
+	}
+}
+
+func BenchmarkIsZeroDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := New(_operatorBase)
+		_ = d1.IsZero()
+	}
+}
+
+// IsPositive
+
+func BenchmarkIsPositiveShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := decimal.NewFromString(_operatorBase)
+		_ = d1.IsPositive()
+	}
+}
+
+func BenchmarkIsPositiveDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := New(_operatorBase)
+		_ = d1.IsPositive()
+	}
+}
+
+// IsNegative
+
+func BenchmarkIsNegativeShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := decimal.NewFromString(_operatorBase)
+		_ = d1.IsNegative()
+	}
+}
+
+func BenchmarkIsNegativeDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := New(_operatorBase)
+		_ = d1.IsNegative()
+	}
+}
+
+// Equal
+
+func BenchmarkEqualShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := decimal.NewFromString(_operatorBase)
+		d2, _ := decimal.NewFromString(_operatorAddition)
+		_ = d1.Equal(d2)
+	}
+}
+
+func BenchmarkEqualDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := New(_operatorBase)
+		d2, _ := New(_operatorAddition)
+		_ = d1.Equal(d2)
+	}
+}
+
+// Greater
+
+func BenchmarkGreaterShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := decimal.NewFromString(_operatorBase)
+		d2, _ := decimal.NewFromString(_operatorAddition)
+		_ = d1.GreaterThan(d2)
+	}
+}
+
+func BenchmarkGreaterDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := New(_operatorBase)
+		d2, _ := New(_operatorAddition)
+		_ = d1.Greater(d2)
+	}
+}
+
+// Less
+
+func BenchmarkLessShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := decimal.NewFromString(_operatorBase)
+		d2, _ := decimal.NewFromString(_operatorAddition)
+		_ = d1.LessThan(d2)
+	}
+}
+
+func BenchmarkLessDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := New(_operatorBase)
+		d2, _ := New(_operatorAddition)
+		_ = d1.Less(d2)
+	}
+}

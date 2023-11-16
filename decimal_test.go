@@ -393,7 +393,7 @@ func (su *DecimalSuite) TestCleanZero() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
-			result := cleanZero([]byte(tc.input))
+			result := tidy([]byte(tc.input))
 			su.Equal(tc.expected, string(result), tc.desc)
 		})
 	}
@@ -896,7 +896,7 @@ func (su *DecimalSuite) TestGreater() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
-			su.Equal(tc.expected, tc.d1.Greater(tc.d2))
+			su.Equal(tc.expected, tc.d1.Greater(tc.d2), "%s > %s ?", tc.d1, tc.d2)
 		})
 	}
 }
@@ -942,8 +942,8 @@ func (su *DecimalSuite) TestLess() {
 
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
-			t.Log(tc.desc)
-			su.Equal(tc.expected, tc.d1.Less(tc.d2))
+			t.Log(tc.desc, tc.d1, tc.d2)
+			su.Equal(tc.expected, tc.d1.Less(tc.d2), "%s < %s ?", tc.d1, tc.d2)
 		})
 	}
 }
@@ -990,7 +990,7 @@ func (su *DecimalSuite) TestGreaterOrEqual() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
-			su.Equal(tc.expected, tc.d1.GreaterOrEqual(tc.d2), "%s %s", tc.d1, tc.d2)
+			su.Equal(tc.expected, tc.d1.GreaterOrEqual(tc.d2), "%s >= %s ?", tc.d1, tc.d2)
 		})
 	}
 }
@@ -1037,7 +1037,7 @@ func (su *DecimalSuite) TestLessOrEqual() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
-			su.Equal(tc.expected, tc.d1.LessOrEqual(tc.d2))
+			su.Equal(tc.expected, tc.d1.LessOrEqual(tc.d2), "%s <= %s ?", tc.d1, tc.d2)
 		})
 	}
 }
