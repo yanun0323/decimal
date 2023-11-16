@@ -105,7 +105,7 @@ type Decimal string
 
 // String return string from Decimal
 func (d Decimal) String() string {
-	d = d.checkEmpty()
+	d = tidy(d)
 	return string(d)
 }
 
@@ -118,7 +118,7 @@ func (d Decimal) String() string {
 //	d, _ := decimal.New("123.456")
 //	d.Truncate(2).String() // "123.45"
 func (d Decimal) Truncate(i int) Decimal {
-	d = d.checkEmpty()
+	d = tidy(d)
 	if i < 0 {
 		return d
 	}
@@ -157,7 +157,7 @@ func (d Decimal) Truncate(i int) Decimal {
 //	d.Shift(3).String()  // "3000"
 //	d.Shift(-3).String() // "0.003"
 func (d Decimal) Shift(shift int) Decimal {
-	d = d.checkEmpty()
+	d = tidy(d)
 	s := string(d)
 	switch s {
 	case "0", "0.", "0.0":
@@ -246,8 +246,8 @@ func shiftNegative(s string, shift int) Decimal {
 //	d2, _ := decimal.New("90.99")
 //	d1.Add(d2).String() // "190.01"
 func (base Decimal) Add(addition Decimal) Decimal {
-	base = base.checkEmpty()
-	addition = addition.checkEmpty()
+	base = tidy(base)
+	addition = tidy(addition)
 
 	b, a := []byte(base), []byte(addition.String())
 	baseNegative := b[0] == '-'
@@ -275,8 +275,8 @@ func (base Decimal) Add(addition Decimal) Decimal {
 //	d2, _ := decimal.New("90.99")
 //	d1.Sub(d2).String() // "9.01"
 func (base Decimal) Sub(subtraction Decimal) Decimal {
-	base = base.checkEmpty()
-	subtraction = subtraction.checkEmpty()
+	base = tidy(base)
+	subtraction = tidy(subtraction)
 
 	b, a := []byte(base), []byte(subtraction.String())
 	baseNegative := b[0] == '-'
@@ -296,7 +296,7 @@ func (base Decimal) Sub(subtraction Decimal) Decimal {
 	return Decimal(unsignedSub(b, a))
 }
 
-// add two unsigned string with shifting
+// unsignedAdd add two unsigned string with shifting
 //
 //	example: 1234.001 add 12.00001
 //	1234.001**
@@ -358,7 +358,7 @@ func unsignedAdd(base, addition []byte) string {
 	return cleanZero(result)
 }
 
-// subtract two unsigned string with shifting
+// unsignedSub subtract two unsigned string with shifting
 //
 //	example: 1234.001 sub 12.00001
 //	1234.001**
@@ -446,7 +446,7 @@ func unsignedSub(base, subtraction []byte) string {
 	return cleanZero(result)
 }
 
-// find the index of decimal point. (if no decimal point, it will insert it into the end of the number)
+// findOrInsertDecimalPoint find the index of decimal point. (if no decimal point, it will insert it into the end of the number)
 //
 // return inserted number and index of decimal point
 func findOrInsertDecimalPoint(num []byte) ([]byte, int) {
@@ -511,9 +511,58 @@ func getMinusString(isMinus bool) string {
 	return ""
 }
 
-func (d Decimal) checkEmpty() Decimal {
+func tidy(d Decimal) Decimal {
 	if len(d) == 0 {
 		return Decimal("0")
 	}
 	return d
+}
+
+// IsZero return true if the Decimal is zero
+func (d Decimal) IsZero() bool {
+	d = tidy(d)
+	return d.String() == "0"
+}
+
+// IsPositive return true if the Decimal is greater than zero
+func (d Decimal) IsPositive() bool {
+	d = tidy(d)
+	return d[0] != '-' && !d.IsZero()
+}
+
+// IsNegative return true if the Decimal is less than zero
+func (d Decimal) IsNegative() bool {
+	d = tidy(d)
+	return d[0] == '-'
+}
+
+// Equal return true if the Decimal is equal to inputted Decimal
+func (d Decimal) Equal(d2 Decimal) bool {
+	d = tidy(d)
+	d2 = tidy(d2)
+	return d.Sub(d2).IsZero()
+}
+
+// Greater return true if the Decimal is greater than inputted Decimal
+func (d Decimal) Greater(d2 Decimal) bool {
+	result := d.Sub(d2)
+	return result.IsPositive() && !result.IsZero()
+}
+
+// Less return true if the Decimal is less than inputted Decimal
+func (d Decimal) Less(d2 Decimal) bool {
+	result := d.Sub(d2)
+	return result.IsNegative() && !result.IsZero()
+}
+
+// GreaterOrEqual return true if the Decimal is greater or equal to inputted Decimal
+func (d Decimal) GreaterOrEqual(d2 Decimal) bool {
+	result := d.Sub(d2)
+	return result.IsPositive() || result.IsZero()
+}
+
+// LessOrEqual return true if the Decimal is less or equal to inputted Decimal
+func (d Decimal) LessOrEqual(d2 Decimal) bool {
+	result := d.Sub(d2)
+	return result.IsNegative() || result.IsZero()
 }

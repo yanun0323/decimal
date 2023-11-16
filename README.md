@@ -22,6 +22,7 @@ import "github.com/yanun0323/decimal"
 - Subtraction
 - Truncate
 - Shift
+- Compare like equal, greater, less, greater or equal, less or equal
 
 ## Unsupported Operation
 - Multiplication
@@ -46,6 +47,17 @@ println(shift)          // 1000.00555
 
 truncate := d1.Truncate(1).String()
 println(truncate)       // 100000.5
+
+// compare
+d1.IsZero()             // false
+d1.IsPositive()         // true
+d1.IsNegative()         // true
+
+d1.Equal(d2)            // false
+d1.Greater(d2)          // true
+d1.Less(d2)             // false
+d1.GreaterOrEqual(d2)   // true
+d1.LessOrEqual(d2)      // false
 
 
 // method chain

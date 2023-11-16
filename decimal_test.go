@@ -591,7 +591,7 @@ func (su *DecimalSuite) TestDecimalSub() {
 	}
 }
 
-func Test_Shift(t *testing.T) {
+func TestShift(t *testing.T) {
 	testCases := []struct {
 		input    string
 		shift    int
@@ -744,4 +744,300 @@ func (su *DecimalSuite) TestJsonSupport() {
 	var dd Decimal
 	su.Require().NoError(json.Unmarshal(b, &dd))
 	su.Equal("123456.123456", dd.String())
+}
+
+func (su *DecimalSuite) TestIsZero() {
+	testCases := []struct {
+		desc     string
+		d        Decimal
+		expected bool
+	}{
+		{
+			d:        "0",
+			expected: true,
+		},
+		{
+			d:        "",
+			expected: true,
+		},
+		{
+			d:        "123",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.expected, tc.d.IsZero())
+		})
+	}
+}
+
+func (su *DecimalSuite) TestIsPositive() {
+	testCases := []struct {
+		desc     string
+		d        Decimal
+		expected bool
+	}{
+		{
+			d:        "123456.88",
+			expected: true,
+		},
+		{
+			d:        "0",
+			expected: false,
+		},
+		{
+			d:        "-1",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.expected, tc.d.IsPositive())
+		})
+	}
+}
+
+func (su *DecimalSuite) TestIsNegative() {
+	testCases := []struct {
+		desc     string
+		d        Decimal
+		expected bool
+	}{
+		{
+			d:        "-123456.88",
+			expected: true,
+		},
+		{
+			d:        "0",
+			expected: false,
+		},
+		{
+			d:        "1",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.expected, tc.d.IsNegative())
+		})
+	}
+}
+
+func (su *DecimalSuite) TestEqual() {
+	testCases := []struct {
+		desc string
+		d1   Decimal
+		d2   Decimal
+	}{
+		{
+			d1: "123456.88",
+			d2: "123456.88",
+		},
+		{
+			d1: "0",
+			d2: "0",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.True(tc.d1.Equal(tc.d2))
+		})
+	}
+}
+
+func (su *DecimalSuite) TestGreater() {
+	testCases := []struct {
+		desc     string
+		d1       Decimal
+		d2       Decimal
+		expected bool
+	}{
+		{
+			d1:       "123456.89",
+			d2:       "123456.88",
+			expected: true,
+		},
+		{
+			d1:       "123456.89",
+			d2:       "12345.888899",
+			expected: true,
+		},
+		{
+			d1:       "0.00001",
+			d2:       "0",
+			expected: true,
+		},
+		{
+			d1:       "0.00001",
+			d2:       "0.00001",
+			expected: false,
+		},
+		{
+			d1:       "0",
+			d2:       "0",
+			expected: false,
+		},
+		{
+			d1:       "12345.888899",
+			d2:       "123456.89",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.expected, tc.d1.Greater(tc.d2))
+		})
+	}
+}
+
+func (su *DecimalSuite) TestLess() {
+	testCases := []struct {
+		desc     string
+		d1       Decimal
+		d2       Decimal
+		expected bool
+	}{
+		{
+			d1:       "123456.88",
+			d2:       "123456.89",
+			expected: true,
+		},
+		{
+			d1:       "12345.888899",
+			d2:       "123456.89",
+			expected: true,
+		},
+		{
+			d1:       "0",
+			d2:       "0.00001",
+			expected: true,
+		},
+		{
+			d1:       "0.00001",
+			d2:       "0.00001",
+			expected: false,
+		},
+		{
+			d1:       "0",
+			d2:       "0",
+			expected: false,
+		},
+		{
+			d1:       "123456.89",
+			d2:       "12345.888899",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.expected, tc.d1.Less(tc.d2))
+		})
+	}
+}
+
+func (su *DecimalSuite) TestGreaterOrEqual() {
+	testCases := []struct {
+		desc     string
+		d1       Decimal
+		d2       Decimal
+		expected bool
+	}{
+		{
+			d1:       "123456.89",
+			d2:       "123456.88",
+			expected: true,
+		},
+		{
+			d1:       "123456.89",
+			d2:       "12345.888899",
+			expected: true,
+		},
+		{
+			d1:       "0.00001",
+			d2:       "0",
+			expected: true,
+		},
+		{
+			d1:       "0.00001",
+			d2:       "0.00001",
+			expected: true,
+		},
+		{
+			d1:       "0",
+			d2:       "0",
+			expected: true,
+		},
+		{
+			d1:       "12345.888899",
+			d2:       "123456.89",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.expected, tc.d1.GreaterOrEqual(tc.d2), "%s %s", tc.d1, tc.d2)
+		})
+	}
+}
+
+func (su *DecimalSuite) TestLessOrEqual() {
+	testCases := []struct {
+		desc     string
+		d1       Decimal
+		d2       Decimal
+		expected bool
+	}{
+		{
+			d1:       "123456.88",
+			d2:       "123456.89",
+			expected: true,
+		},
+		{
+			d1:       "12345.888899",
+			d2:       "123456.89",
+			expected: true,
+		},
+		{
+			d1:       "0",
+			d2:       "0.00001",
+			expected: true,
+		},
+		{
+			d1:       "0.00001",
+			d2:       "0.00001",
+			expected: true,
+		},
+		{
+			d1:       "0",
+			d2:       "0",
+			expected: true,
+		},
+		{
+			d1:       "123456.89",
+			d2:       "12345.888899",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.expected, tc.d1.LessOrEqual(tc.d2))
+		})
+	}
 }
