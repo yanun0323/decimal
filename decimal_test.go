@@ -28,9 +28,9 @@ func (su *DecimalSuite) TestPressure() {
 	b := strings.Repeat("2", 100_000_000)
 	a := strings.Repeat("1", 100_000_000)
 
-	bd, err := NewDecimal(b)
+	bd, err := New(b)
 	su.Require().NoError(err)
-	ad, err := NewDecimal(a)
+	ad, err := New(a)
 	su.Require().NoError(err)
 
 	res := bd.Sub(ad)
@@ -68,7 +68,7 @@ func (su *DecimalSuite) TestNewDecimal() {
 		{
 			desc:     "Empty String",
 			input:    "",
-			hasError: true,
+			expected: "0",
 		},
 		{
 			desc:     "Empty String After Dropping",
@@ -85,7 +85,7 @@ func (su *DecimalSuite) TestNewDecimal() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
-			d, err := NewDecimal(tc.input)
+			d, err := New(tc.input)
 			if tc.hasError {
 				su.Require().Error(err)
 				return
@@ -95,6 +95,22 @@ func (su *DecimalSuite) TestNewDecimal() {
 			su.Equal(tc.expected, d.String(), tc.desc)
 		})
 	}
+}
+
+func (su *DecimalSuite) TestZeroValue() {
+	var d Decimal
+	d2, err := New("123")
+	su.Require().NoError(err)
+
+	su.NotPanics(func() {
+		su.Equal("123", d.Add(d2).String())
+		su.Equal("-123", d.Sub(d2).String())
+		su.Equal("123", d2.Add(d).String())
+		su.Equal("123", d2.Sub(d).String())
+		su.Equal("0", d.Truncate(5).String())
+		su.Equal("0", d.Shift(5).String())
+	})
+
 }
 
 func (su *DecimalSuite) TestTruncate() {
@@ -163,7 +179,7 @@ func (su *DecimalSuite) TestTruncate() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
-			d, err := NewDecimal(tc.input)
+			d, err := New(tc.input)
 			su.Require().NoError(err, tc.desc)
 			su.Equal(tc.expected, d.Truncate(tc.truncate).String(), tc.desc)
 		})
@@ -711,7 +727,7 @@ func Test_Shift(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
 			t.Log(tc.input)
-			result, err := NewDecimal(tc.input)
+			result, err := New(tc.input)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expected, result.Shift(tc.shift).String())
 		})
@@ -719,7 +735,7 @@ func Test_Shift(t *testing.T) {
 }
 
 func (su *DecimalSuite) TestJsonSupport() {
-	d := RequireDecimal("123456.123456")
+	d := Require("123456.123456")
 
 	b, err := json.Marshal(d)
 	su.Require().NoError(err)

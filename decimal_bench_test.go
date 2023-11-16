@@ -13,16 +13,16 @@ const (
 	_operatorAddition = "789.00456888"
 )
 
-func Benchmark_NewDecimal(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		b, _ := NewDecimal(_operatorBase)
-		_ = b
-	}
-}
+// func BenchmarkNew(b *testing.B) {
+// 	for i := 0; i < b.N; i++ {
+// 		b, _ := New(_operatorBase)
+// 		_ = b
+// 	}
+// }
 
 // Calculate
 
-func Benchmark_Calculate_Decimal(b *testing.B) {
+func BenchmarkCalculateShopSpringDecimal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		b, _ := decimal.NewFromString(_operatorBase)
 		a, _ := decimal.NewFromString(_operatorAddition)
@@ -33,10 +33,10 @@ func Benchmark_Calculate_Decimal(b *testing.B) {
 	}
 }
 
-func Benchmark_Calculate_StringDecimal(b *testing.B) {
+func BenchmarkCalculateDecimal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		b, _ := NewDecimal(_operatorBase)
-		a, _ := NewDecimal(_operatorAddition)
+		b, _ := New(_operatorBase)
+		a, _ := New(_operatorAddition)
 		result := b.Add(a).Sub(a)
 		_ = result
 	}
@@ -44,7 +44,7 @@ func Benchmark_Calculate_StringDecimal(b *testing.B) {
 
 // Shifting
 
-func Benchmark_Shift_Decimal(b *testing.B) {
+func BenchmarkShiftShopSpringDecimal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		d, _ := decimal.NewFromString(_operatorBase)
 		s := d.Shift(8).String()
@@ -55,13 +55,37 @@ func Benchmark_Shift_Decimal(b *testing.B) {
 	}
 }
 
-func Benchmark_Shift_StringDecimal(b *testing.B) {
+func BenchmarkShiftDecimal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		d, _ := NewDecimal(_operatorBase)
+		d, _ := New(_operatorBase)
 		s := d.Shift(8)
 		_ = s
-		d2, _ := NewDecimal(_operatorBase)
+		d2, _ := New(_operatorBase)
 		s2 := d2.Shift(-8)
+		_ = s2
+	}
+}
+
+// Truncating
+
+func BenchmarkTruncateShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d, _ := decimal.NewFromString(_operatorBase)
+		s := d.Truncate(8).String()
+		_ = s
+		d2, _ := decimal.NewFromString(_operatorBase)
+		s2 := d2.Truncate(-8).String()
+		_ = s2
+	}
+}
+
+func BenchmarkTruncateDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d, _ := New(_operatorBase)
+		s := d.Truncate(8)
+		_ = s
+		d2, _ := New(_operatorBase)
+		s2 := d2.Truncate(-8)
 		_ = s2
 	}
 }

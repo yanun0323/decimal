@@ -42,14 +42,18 @@ var (
 	}
 )
 
-// NewDecimal create a Decimal.
+// New create a Decimal.
 //
 // acceptable symbol (+-.,_0123456789)
 //
 // Example:
 //
-//	d, err := decimal.NewDecimal("123,456,789.000")
-func NewDecimal(s string) (Decimal, error) {
+//	d, err := decimal.New("123,456,789.000")
+func New(s string) (Decimal, error) {
+	if len(s) == 0 {
+		return Decimal("0"), nil
+	}
+
 	buf := []byte(s)
 	dot := false
 	isSymbolDroppable := _isFirstSymbolDroppable
@@ -81,16 +85,16 @@ func NewDecimal(s string) (Decimal, error) {
 	return Decimal(cleanZero(inserted)), nil
 }
 
-// RequireDecimal returns a new Decimal from a string representation or panics if NewDecimal would have returned an error.
+// Require returns a new Decimal from a string representation or panics if New would have returned an error.
 //
 // Example:
 //
-//	d := decimal.RequireDecimal("123,456")
+//	d := decimal.Require("123,456")
 //	d.String() // "123456"
 //
-//	d2 := decimal.RequireDecimal("") // Panic!!!
-func RequireDecimal(s string) Decimal {
-	d, err := NewDecimal(s)
+//	d2 := decimal.Require("") // Panic!!!
+func Require(s string) Decimal {
+	d, err := New(s)
 	if err != nil {
 		panic(err)
 	}
@@ -101,6 +105,7 @@ type Decimal string
 
 // String return string from Decimal
 func (d Decimal) String() string {
+	d = d.checkEmpty()
 	return string(d)
 }
 
@@ -110,9 +115,10 @@ func (d Decimal) String() string {
 //
 // Example:
 //
-//	d, _ := decimal.NewDecimal("123.456")
+//	d, _ := decimal.New("123.456")
 //	d.Truncate(2).String() // "123.45"
 func (d Decimal) Truncate(i int) Decimal {
+	d = d.checkEmpty()
 	if i < 0 {
 		return d
 	}
@@ -147,10 +153,11 @@ func (d Decimal) Truncate(i int) Decimal {
 //
 // Example:
 //
-//	d, _ := decimal.NewDecimal("3")
+//	d, _ := decimal.New("3")
 //	d.Shift(3).String()  // "3000"
 //	d.Shift(-3).String() // "0.003"
 func (d Decimal) Shift(shift int) Decimal {
+	d = d.checkEmpty()
 	s := string(d)
 	switch s {
 	case "0", "0.", "0.0":
@@ -235,10 +242,13 @@ func shiftNegative(s string, shift int) Decimal {
 //
 // Example:
 //
-//	d1, _ := decimal.NewDecimal("100")
-//	d2, _ := decimal.NewDecimal("90.99")
+//	d1, _ := decimal.New("100")
+//	d2, _ := decimal.New("90.99")
 //	d1.Add(d2).String() // "190.01"
 func (base Decimal) Add(addition Decimal) Decimal {
+	base = base.checkEmpty()
+	addition = addition.checkEmpty()
+
 	b, a := []byte(base), []byte(addition.String())
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
@@ -261,10 +271,13 @@ func (base Decimal) Add(addition Decimal) Decimal {
 //
 // Example:
 //
-//	d1, _ := decimal.NewDecimal("100")
-//	d2, _ := decimal.NewDecimal("90.99")
+//	d1, _ := decimal.New("100")
+//	d2, _ := decimal.New("90.99")
 //	d1.Sub(d2).String() // "9.01"
 func (base Decimal) Sub(subtraction Decimal) Decimal {
+	base = base.checkEmpty()
+	subtraction = subtraction.checkEmpty()
+
 	b, a := []byte(base), []byte(subtraction.String())
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
@@ -496,4 +509,11 @@ func getMinusString(isMinus bool) string {
 		return "-"
 	}
 	return ""
+}
+
+func (d Decimal) checkEmpty() Decimal {
+	if len(d) == 0 {
+		return Decimal("0")
+	}
+	return d
 }
