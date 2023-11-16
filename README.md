@@ -53,6 +53,7 @@ result := d1.Sub(d2).Shift(-5).Add(d1).Truncate(3).String()
 ```
 
 ## Benchmark
-compare to [github.com/shopspring/decimal](https://github.com/shopspring/decimal)
+Compare to [github.com/shopspring/decimal](https://github.com/shopspring/decimal)
+> Memory usage less than half of `shopspring/decimal`
 
 ![Alt text](./benchmark.png)
