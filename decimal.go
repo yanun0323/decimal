@@ -42,6 +42,11 @@ var (
 	}
 )
 
+// Zero return the zero decimal
+func Zero() Decimal {
+	return Decimal("0")
+}
+
 // New create a Decimal.
 //
 // acceptable symbol (+-.,_0123456789)

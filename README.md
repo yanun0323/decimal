@@ -30,7 +30,9 @@ import "github.com/yanun0323/decimal"
 
 ## Usage
 ```go
-// create a decimal with error
+// create decimal
+zero := decimal.Zero()
+
 d1, err := decimal.New("100,000.555")
 
 d2 := decimal.Require("50_000.05")
