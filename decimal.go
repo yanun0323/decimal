@@ -686,6 +686,9 @@ func (d Decimal) LessOrEqual(d2 Decimal) bool {
 	return d.Equal(d2) || d.Less(d2)
 }
 
+// BenchmarkMulShopSpringDecimal-8	3743565	318.6 ns/op		320 B/op	12 allocs/op
+// BenchmarkMulDecimal-8			2049703	585.2 ns/op		360 B/op	6 allocs/op
+
 // Mul return d * d2
 func (d Decimal) Mul(d2 Decimal) Decimal {
 	if d.IsZero() || d2.IsZero() {
@@ -717,6 +720,12 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 	buf = append(buf, multiplied[:idx]...)
 	buf = append(buf, '.')
 	buf = append(buf, multiplied[idx:]...)
+
+	// buf := strings.Builder{}
+	// buf.Write(multiplied[:idx])
+	// buf.WriteByte('.')
+	// buf.Write(multiplied[idx:])
+
 	return Decimal(prefix(minus) + tidy(buf))
 }
 
@@ -728,11 +737,9 @@ func removeDecimalPoint(s string) (result []byte, countOfRightSide int) {
 			break
 		}
 	}
-
 	if idx == -1 {
 		return []byte(s), 0
 	}
-
 	return append([]byte(s[:idx]), s[idx+1:]...), len(s) - idx - 1
 }
 
@@ -740,25 +747,31 @@ func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 	if len(d1) < len(d2) {
 		return multiplyPureNumber(d2, d1)
 	}
-	m := make([]int, len(d1)+len(d2))
+	result := make([]byte, len(d1)+len(d2))
+	val2 := 0
 	cache := 0
-	for i, symbol2 := range d2 {
-		if symbol2 == '0' {
+	for i := len(d2) - 1; i >= 0; i-- {
+		if d2[i] == '0' {
 			continue
 		}
-		cache = int(symbol2 - '0')
-		for j, symbol1 := range d1 {
-			idx := len(m) - 1 - ((len(d2) - 1 - i) + (len(d1) - 1 - j))
-			m[idx] += int(symbol1-'0') * cache
+		val2 = int(d2[i] - '0')
+		cache = 0
+		idx := i + len(d1)
+		j := idx - i - 1
+		for ; idx >= 0; idx, j = idx-1, j-1 {
+			if j >= 0 {
+				cache += int(d1[j]-'0')*val2 + int(result[idx])
+			} else if cache == 0 {
+				break
+			}
+
+			result[idx] = byte(cache % 10)
+			cache /= 10
 		}
 	}
 
-	result := make([]byte, len(m))
-	cache = 0
-	for i := len(m) - 1; i >= 0; i-- {
-		cache += m[i]
-		result[i] = byte(cache%10) + '0'
-		cache /= 10
+	for i, v := range result {
+		result[i] = v + '0'
 	}
 
 	return result
