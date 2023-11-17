@@ -1041,3 +1041,69 @@ func (su *DecimalSuite) TestLessOrEqual() {
 		})
 	}
 }
+
+func (su *DecimalSuite) TestMultiplyPureNumber() {
+	d1 := []byte("12345")
+	d2 := []byte("5648935")
+
+	result := string(multiplyPureNumber(d1, d2))
+	su.Equal("069736102575", result)
+}
+
+func (su *DecimalSuite) TestRemoveDecimalPoint() {
+	result, right := removeDecimalPoint("123.45678")
+	su.Equal("12345678", string(result))
+	su.Equal(5, right)
+}
+
+func (su *DecimalSuite) TestMul() {
+	testCases := []struct {
+		desc     string
+		d1, d2   string
+		expected string
+	}{
+		{
+			d1:       "12345",
+			d2:       "5648935",
+			expected: "69736102575",
+		},
+		{
+			d1:       "-12345",
+			d2:       "5648935",
+			expected: "-69736102575",
+		},
+		{
+			d1:       "123.45",
+			d2:       "-5648.935",
+			expected: "-697361.02575",
+		},
+		{
+			d1:       "-12345",
+			d2:       "-5648.935",
+			expected: "69736102.575",
+		},
+		{
+			d1:       "123.45",
+			d2:       "56.48935",
+			expected: "6973.6102575",
+		},
+		{
+			d1:       "100.45",
+			d2:       "1000",
+			expected: "100450",
+		},
+		{
+			d1:       "100",
+			d2:       "1000",
+			expected: "100000",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			result := Decimal(tc.d1).Mul(Decimal(tc.d2))
+			su.Equal(tc.expected, result.String(), "%s * %s = %s", tc.d1, tc.d2, tc.expected)
+		})
+	}
+}

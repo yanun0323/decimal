@@ -30,6 +30,8 @@ func BenchmarkCalculateShopSpringDecimal(b *testing.B) {
 		ss := result.String()
 		_ = ss
 
+		b.Mul(a)
+
 	}
 }
 
@@ -189,5 +191,23 @@ func BenchmarkLessDecimal(b *testing.B) {
 		d1, _ := New(_operatorBase)
 		d2, _ := New(_operatorAddition)
 		_ = d1.Less(d2)
+	}
+}
+
+// Mul
+
+func BenchmarkMulShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := decimal.NewFromString(_operatorBase)
+		d2, _ := decimal.NewFromString(_operatorAddition)
+		_ = d1.Mul(d2)
+	}
+}
+
+func BenchmarkMulDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := New(_operatorBase)
+		d2, _ := New(_operatorAddition)
+		_ = d1.Mul(d2)
 	}
 }

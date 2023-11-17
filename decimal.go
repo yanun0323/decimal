@@ -56,7 +56,7 @@ func Zero() Decimal {
 //	d, err := decimal.New("123,456,789.000")
 func New(s string) (Decimal, error) {
 	if len(s) == 0 {
-		return Decimal("0"), nil
+		return Zero(), nil
 	}
 
 	buf := []byte(s)
@@ -66,12 +66,12 @@ func New(s string) (Decimal, error) {
 		b = buf[i]
 		droppable, valid := isSymbolDroppable[b]
 		if !valid {
-			return Decimal("0"), errors.New(fmt.Sprintf("invalid symbol (%s) in %s", string(b), s))
+			return Zero(), errors.New(fmt.Sprintf("invalid symbol (%s) in %s", string(b), s))
 		}
 
 		if b == '.' {
 			if dot {
-				return Decimal("0"), errors.New("duplicate dot")
+				return Zero(), errors.New("duplicate dot")
 			}
 			dot = true
 		}
@@ -83,7 +83,7 @@ func New(s string) (Decimal, error) {
 	}
 
 	if len(buf) == 0 {
-		return Decimal("0"), errors.New("can't convert to Decimal empty string")
+		return Zero(), errors.New("can't convert to Decimal empty string")
 	}
 
 	inserted, _ := findOrInsertDecimalPoint(buf)
@@ -166,7 +166,7 @@ func (d Decimal) Shift(shift int) Decimal {
 	s := string(d)
 	switch s {
 	case "0", "0.", "0.0":
-		return Decimal("0")
+		return Zero()
 	}
 
 	if shift == 0 {
@@ -239,22 +239,22 @@ func shiftNegative(s string, shift int) Decimal {
 		buf = append(buf, suffixes...)
 		return Decimal(prefix(isMinus) + tidy(buf))
 	default:
-		return Decimal("0")
+		return Zero()
 	}
 }
 
-// Add add Decimal
+// Add return d + d2
 //
 // Example:
 //
 //	d1, _ := decimal.New("100")
 //	d2, _ := decimal.New("90.99")
 //	d1.Add(d2).String() // "190.01"
-func (base Decimal) Add(addition Decimal) Decimal {
-	base = blanker(base)
-	addition = blanker(addition)
+func (d Decimal) Add(d2 Decimal) Decimal {
+	d = blanker(d)
+	d2 = blanker(d2)
 
-	b, a := []byte(base), []byte(addition.String())
+	b, a := []byte(d), []byte(d2.String())
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
 	if baseNegative && additionNegative {
@@ -272,18 +272,18 @@ func (base Decimal) Add(addition Decimal) Decimal {
 	return Decimal(unsignedAdd(b, a))
 }
 
-// Sub subtract Decimal
+// Sub return d - d2
 //
 // Example:
 //
 //	d1, _ := decimal.New("100")
 //	d2, _ := decimal.New("90.99")
 //	d1.Sub(d2).String() // "9.01"
-func (base Decimal) Sub(subtraction Decimal) Decimal {
-	base = blanker(base)
-	subtraction = blanker(subtraction)
+func (d Decimal) Sub(d2 Decimal) Decimal {
+	d = blanker(d)
+	d2 = blanker(d2)
 
-	b, a := []byte(base), []byte(subtraction.String())
+	b, a := []byte(d), []byte(d2.String())
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
 	if baseNegative && additionNegative {
@@ -469,7 +469,7 @@ func findOrInsertDecimalPoint(num []byte) ([]byte, int) {
 }
 
 // clean the zero and dot of prefixes and suffixes
-func tidy(num []byte) string {
+func tidy(num []byte, noDecimalPoint ...bool) string {
 	if len(num) == 0 {
 		return "0"
 	}
@@ -479,6 +479,15 @@ func tidy(num []byte) string {
 		if len(num) == 0 {
 			return "0"
 		}
+	}
+
+	noDP := false
+	if len(noDecimalPoint) != 0 {
+		noDP = noDecimalPoint[0]
+	}
+
+	if noDP {
+		return string(num)
 	}
 
 	for num[len(num)-1] == '0' {
@@ -520,37 +529,37 @@ func prefix(isMinus bool) string {
 // blanker makes sure Decimal is not empty string
 func blanker(d Decimal) Decimal {
 	if len(d) == 0 {
-		return Decimal("0")
+		return Zero()
 	}
 	return d
 }
 
-// IsZero return true if the Decimal is zero
+// IsZero return d == 0
 func (d Decimal) IsZero() bool {
 	return len(d) == 0 || d.String() == "0"
 }
 
-// IsPositive return true if the Decimal is greater than zero
+// IsPositive return d > 0
 func (d Decimal) IsPositive() bool {
 	return d[0] != '-' && !d.IsZero()
 }
 
-// IsNegative return true if the Decimal is less than zero
+// IsNegative return d < 0
 func (d Decimal) IsNegative() bool {
 	return d[0] == '-'
 }
 
-// Equal return true if the Decimal is equal to inputted Decimal
+// Equal return d == d2
 func (d Decimal) Equal(d2 Decimal) bool {
 	return blanker(d) == blanker(d2)
 }
 
-// Greater return true if the Decimal is greater than inputted Decimal
+// Greater return d > d2
 func (d Decimal) Greater(d2 Decimal) bool {
 	return greater(blanker(d), blanker(d2))
 }
 
-// greater return true if the d1 is greater than d2
+// greater return true if the d1 > d2
 //
 //	example: 1234.001 vs 12.00001
 //	1234.001**
@@ -606,12 +615,12 @@ func greater(d1, d2 Decimal) bool {
 	return false
 }
 
-// Less return true if the Decimal is less than inputted Decimal
+// Less return d < d2
 func (d Decimal) Less(d2 Decimal) bool {
 	return less(blanker(d), blanker(d2))
 }
 
-// less return true if the d1 is less than d2
+// less return true if the d1 < d2
 //
 //	example: 1234.001 vs 12.00001
 //	1234.001**
@@ -667,12 +676,90 @@ func less(d1, d2 Decimal) bool {
 	return false
 }
 
-// GreaterOrEqual return true if the Decimal is greater or equal to inputted Decimal
+// GreaterOrEqual return d >= d2
 func (d Decimal) GreaterOrEqual(d2 Decimal) bool {
 	return d.Equal(d2) || d.Greater(d2)
 }
 
-// LessOrEqual return true if the Decimal is less or equal to inputted Decimal
+// LessOrEqual return d <= d2
 func (d Decimal) LessOrEqual(d2 Decimal) bool {
 	return d.Equal(d2) || d.Less(d2)
+}
+
+// Mul return d * d2
+func (d Decimal) Mul(d2 Decimal) Decimal {
+	if d.IsZero() || d2.IsZero() {
+		return Zero()
+	}
+
+	a, right1 := removeDecimalPoint(string(d))
+	b, right2 := removeDecimalPoint(string(d2))
+
+	minus := false
+	if a[0] == '-' {
+		a = a[1:]
+		minus = !minus
+	}
+
+	if b[0] == '-' {
+		b = b[1:]
+		minus = !minus
+	}
+
+	multiplied := multiplyPureNumber(a, b)
+	idx := (right1 + right2)
+	if idx == 0 {
+		return Decimal(prefix(minus) + tidy(multiplied, true))
+	}
+
+	idx = len(multiplied) - idx
+	buf := make([]byte, 0, len(multiplied)+1)
+	buf = append(buf, multiplied[:idx]...)
+	buf = append(buf, '.')
+	buf = append(buf, multiplied[idx:]...)
+	return Decimal(prefix(minus) + tidy(buf))
+}
+
+func removeDecimalPoint(s string) (result []byte, countOfRightSide int) {
+	idx := -1
+	for i := range s {
+		if s[i] == '.' {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		return []byte(s), 0
+	}
+
+	return append([]byte(s[:idx]), s[idx+1:]...), len(s) - idx - 1
+}
+
+func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
+	if len(d1) < len(d2) {
+		return multiplyPureNumber(d2, d1)
+	}
+	m := make([]int, len(d1)+len(d2))
+	cache := 0
+	for i, symbol2 := range d2 {
+		if symbol2 == '0' {
+			continue
+		}
+		cache = int(symbol2 - '0')
+		for j, symbol1 := range d1 {
+			idx := len(m) - 1 - ((len(d2) - 1 - i) + (len(d1) - 1 - j))
+			m[idx] += int(symbol1-'0') * cache
+		}
+	}
+
+	result := make([]byte, len(m))
+	cache = 0
+	for i := len(m) - 1; i >= 0; i-- {
+		cache += m[i]
+		result[i] = byte(cache%10) + '0'
+		cache /= 10
+	}
+
+	return result
 }
