@@ -20,12 +20,12 @@ import "github.com/yanun0323/decimal"
 - Initial from string
 - Addition
 - Subtraction
+- Multiplication
 - Truncate
 - Shift
 - Compare like equal, greater, less, greater or equal, less or equal
 
 ## Unsupported Operation
-- Multiplication
 - Division
 
 ## Usage
