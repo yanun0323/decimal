@@ -748,30 +748,35 @@ func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 		return multiplyPureNumber(d2, d1)
 	}
 	result := make([]byte, len(d1)+len(d2))
-	val2 := 0
-	cache := 0
+
+	var (
+		symbol2, val2, cache, temp byte
+		idx, j                     int
+	)
+
 	for i := len(d2) - 1; i >= 0; i-- {
-		if d2[i] == '0' {
+		symbol2 = d2[i]
+		if symbol2 == '0' {
 			continue
 		}
-		val2 = int(d2[i] - '0')
+		val2 = (symbol2 - '0')
 		cache = 0
-		idx := i + len(d1)
-		j := idx - i - 1
+		idx = i + len(d1)
+		j = idx - i - 1
 		for ; idx >= 0; idx, j = idx-1, j-1 {
 			if j >= 0 {
-				cache += int(d1[j]-'0')*val2 + int(result[idx])
+				cache += (d1[j]-'0')*val2 + result[idx]
 			} else if cache == 0 {
 				break
 			}
-
-			result[idx] = byte(cache % 10)
-			cache /= 10
+			temp = cache / 10
+			result[idx] = byte(cache - temp*10)
+			cache = temp
 		}
 	}
 
 	for i, v := range result {
-		result[i] = v + '0'
+		result[i] += v + '0'
 	}
 
 	return result
