@@ -729,6 +729,7 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 	return Decimal(prefix(minus) + tidy(buf))
 }
 
+// removeDecimalPoint removes decimal point and return the count of the digit right the decimal
 func removeDecimalPoint(s string) (result []byte, countOfRightSide int) {
 	idx := -1
 	for i := range s {
@@ -743,6 +744,7 @@ func removeDecimalPoint(s string) (result []byte, countOfRightSide int) {
 	return append([]byte(s[:idx]), s[idx+1:]...), len(s) - idx - 1
 }
 
+// multiplyPureNumber return d1 * d2, d1 & d2 must contain only number 0~9
 func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 	if len(d1) < len(d2) {
 		return multiplyPureNumber(d2, d1)

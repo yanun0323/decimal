@@ -44,6 +44,10 @@ println(add)            // 150000.605
 sub := d1.Sub(d2).String()
 println(sub)            // 50000.505
 
+mul := d1.Mul(d2).String()
+println(mul)            // 5000032750.02775
+
+
 shift := d1.Shift(-2).String()
 println(shift)          // 1000.00555
 
