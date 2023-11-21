@@ -1,5 +1,5 @@
 # Decimal
-A string base decimal.
+A high efficient decimal base on string type.
 
 ## Supported go versions
 #### _GO 1.21 or higher_
