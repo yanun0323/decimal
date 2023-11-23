@@ -21,6 +21,7 @@ import "github.com/yanun0323/decimal"
 - Addition
 - Subtraction
 - Multiplication
+- Negative
 - Truncate
 - Shift
 - Compare like equal, greater, less, greater or equal, less or equal
@@ -51,6 +52,9 @@ println(mul)            // 5000032750.02775
 shift := d1.Shift(-2).String()
 println(shift)          // 1000.00555
 
+neg := d1.Neg().String()
+println(neg)            // -150000.605
+
 truncate := d1.Truncate(1).String()
 println(truncate)       // 100000.5
 
@@ -73,6 +77,7 @@ result := d1.Sub(d2).Shift(-5).Add(d1).Truncate(3).String()
 ## Benchmark
 Compare to [github.com/shopspring/decimal](https://github.com/shopspring/decimal)
 > CPU usage almost same or less than `shopspring/decimal`
+> (except multiplication)
 >
 > Memory usage less than half of `shopspring/decimal`
 

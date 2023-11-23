@@ -20,6 +20,54 @@ const (
 // 	}
 // }
 
+// Add
+
+func BenchmarkAddShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		b, _ := decimal.NewFromString(_operatorBase)
+		a, _ := decimal.NewFromString(_operatorAddition)
+		result := b.Add(a).Add(b)
+		ss := result.String()
+		_ = ss
+
+		b.Mul(a)
+
+	}
+}
+
+func BenchmarkAddDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		b, _ := New(_operatorBase)
+		a, _ := New(_operatorAddition)
+		result := b.Add(a).Add(a)
+		_ = result
+	}
+}
+
+// Sub
+
+func BenchmarkSubShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		b, _ := decimal.NewFromString(_operatorBase)
+		a, _ := decimal.NewFromString(_operatorAddition)
+		result := b.Sub(a).Sub(b)
+		ss := result.String()
+		_ = ss
+
+		b.Mul(a)
+
+	}
+}
+
+func BenchmarkSubDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		b, _ := New(_operatorBase)
+		a, _ := New(_operatorAddition)
+		result := b.Sub(a).Sub(a)
+		_ = result
+	}
+}
+
 // Mul
 
 func BenchmarkMulShopSpringDecimal(b *testing.B) {
@@ -35,30 +83,6 @@ func BenchmarkMulDecimal(b *testing.B) {
 		d1, _ := New(_operatorBase)
 		d2, _ := New(_operatorAddition)
 		_ = d1.Mul(d2)
-	}
-}
-
-// Calculate
-
-func BenchmarkCalculateShopSpringDecimal(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		b, _ := decimal.NewFromString(_operatorBase)
-		a, _ := decimal.NewFromString(_operatorAddition)
-		result := b.Add(a).Sub(b)
-		ss := result.String()
-		_ = ss
-
-		b.Mul(a)
-
-	}
-}
-
-func BenchmarkCalculateDecimal(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		b, _ := New(_operatorBase)
-		a, _ := New(_operatorAddition)
-		result := b.Add(a).Sub(a)
-		_ = result
 	}
 }
 
@@ -83,6 +107,22 @@ func BenchmarkShiftDecimal(b *testing.B) {
 		d2, _ := New(_operatorBase)
 		s2 := d2.Shift(-8)
 		_ = s2
+	}
+}
+
+// Neg
+
+func BenchmarkNegShopSpringDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := decimal.NewFromString(_operatorBase)
+		_ = d1.Neg()
+	}
+}
+
+func BenchmarkNegDecimal(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		d1, _ := New(_operatorBase)
+		_ = d1.Neg()
 	}
 }
 
