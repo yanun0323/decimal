@@ -113,6 +113,36 @@ func (su *DecimalSuite) TestZeroValue() {
 
 }
 
+func (su *DecimalSuite) TestNeg() {
+	testCases := []struct {
+		desc     string
+		d        string
+		expected string
+	}{
+		{
+			d:        "0",
+			expected: "0",
+		},
+		{
+			d:        "123.456",
+			expected: "-123.456",
+		},
+		{
+			d:        "-123.456",
+			expected: "123.456",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			d, err := New(tc.d)
+			su.Require().NoError(err)
+			su.Equal(tc.expected, d.Neg().String())
+		})
+	}
+}
+
 func (su *DecimalSuite) TestTruncate() {
 	testCases := []struct {
 		desc     string

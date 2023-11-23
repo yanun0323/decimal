@@ -114,6 +114,24 @@ func (d Decimal) String() string {
 	return string(d)
 }
 
+// Neg returns -d
+//
+// Example:
+//
+//	d, _ := decimal.New("123.456")
+//	d.Neg().String() // "-123.45"
+func (d Decimal) Neg() Decimal {
+	if d.IsZero() {
+		return d
+	}
+
+	if d[0] != '-' {
+		return "-" + d
+	}
+
+	return d[1:]
+}
+
 // Truncate truncates off digits from the number, without rounding.
 //
 // NOTE: precision is the last digit that will not be truncated (must be >= 0).
@@ -686,9 +704,6 @@ func (d Decimal) LessOrEqual(d2 Decimal) bool {
 	return d.Equal(d2) || d.Less(d2)
 }
 
-// BenchmarkMulShopSpringDecimal-8	3743565	318.6 ns/op		320 B/op	12 allocs/op
-// BenchmarkMulDecimal-8			2049703	585.2 ns/op		360 B/op	6 allocs/op
-
 // Mul return d * d2
 func (d Decimal) Mul(d2 Decimal) Decimal {
 	if d.IsZero() || d2.IsZero() {
@@ -762,7 +777,6 @@ func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 			continue
 		}
 		val2 = (symbol2 - '0')
-		cache = 0
 		idx = i + len(d1)
 		j = idx - i - 1
 		for ; idx >= 0; idx, j = idx-1, j-1 {
@@ -778,7 +792,7 @@ func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 	}
 
 	for i, v := range result {
-		result[i] += v + '0'
+		result[i] = v + '0'
 	}
 
 	return result
