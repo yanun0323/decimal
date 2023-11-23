@@ -54,6 +54,9 @@ println(shift)          // 1000.00555
 neg := d1.Neg().String()
 println(neg)            // -150000.605
 
+abs := neg.Abs().String()
+println(abs)            // 150000.605
+
 truncate := d1.Truncate(1).String()
 println(truncate)       // 100000.5
 

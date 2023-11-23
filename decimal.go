@@ -114,6 +114,14 @@ func (d Decimal) String() string {
 	return string(d)
 }
 
+// Abs returns the absolute value of the decimal.
+func (d Decimal) Abs() Decimal {
+	if d[0] == '-' {
+		return d[1:]
+	}
+	return d
+}
+
 // Neg returns -d
 //
 // Example:
@@ -125,11 +133,11 @@ func (d Decimal) Neg() Decimal {
 		return d
 	}
 
-	if d[0] != '-' {
-		return "-" + d
+	if d[0] == '-' {
+		return d[1:]
 	}
 
-	return d[1:]
+	return "-" + d
 }
 
 // Truncate truncates off digits from the number, without rounding.

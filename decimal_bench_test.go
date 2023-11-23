@@ -62,9 +62,6 @@ func BenchmarkSub(b *testing.B) {
 				result := b.Sub(a).Sub(b)
 				ss := result.String()
 				_ = ss
-
-				b.Mul(a)
-
 			}
 		},
 		func(b *testing.B) {
@@ -117,6 +114,23 @@ func BenchmarkShift(b *testing.B) {
 				d2, _ := New(_operatorBase)
 				s2 := d2.Shift(-8)
 				_ = s2
+			}
+		},
+	)
+}
+
+func BenchmarkAbs(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				_ = d1.Abs()
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				_ = d1.Abs()
 			}
 		},
 	)
