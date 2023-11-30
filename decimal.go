@@ -816,3 +816,23 @@ func (d Decimal) Div(d2 Decimal) Decimal {
 	decimal.DivisionPrecision = DivisionPrecision
 	return Decimal(decimal.RequireFromString(string(d)).Div(decimal.RequireFromString(string(d2))).String())
 }
+
+func (d Decimal) DivWorking(d2 Decimal) Decimal {
+	decimal.DivisionPrecision = DivisionPrecision
+	d1Pure, rightCount1 := removeDecimalPoint(string(d))
+	d2Pure, rightCount2 := removeDecimalPoint(string(d2))
+
+	offset := (len(d) - rightCount1 - 1) - (len(d2) - rightCount2 - 1)
+	if offset > 0 {
+		d2Pure = append(d2Pure, bytes.Repeat([]byte{'0'}, offset)...)
+	} else {
+		d1Pure = append(d1Pure, bytes.Repeat([]byte{'0'}, -offset)...)
+	}
+
+	var findTimes func(t int)
+	findTimes = func(t int) {
+
+	}
+	_ = findTimes
+	return d
+}
