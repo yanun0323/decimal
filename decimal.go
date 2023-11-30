@@ -6,6 +6,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/shopspring/decimal"
+)
+
+var (
+	DivisionPrecision = 16
 )
 
 var (
@@ -804,4 +809,10 @@ func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 	}
 
 	return result
+}
+
+// Div returns d / d2. If it doesn't divide exactly, the result will have DivisionPrecision digits after the decimal point.
+func (d Decimal) Div(d2 Decimal) Decimal {
+	decimal.DivisionPrecision = DivisionPrecision
+	return Decimal(decimal.RequireFromString(string(d)).Div(decimal.RequireFromString(string(d2))).String())
 }

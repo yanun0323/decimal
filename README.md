@@ -1,7 +1,7 @@
 # Decimal
 A high efficient decimal base on string type.
 
-## Supported go versions
+## Requirements
 #### _GO 1.21 or higher_
 
 ## Import

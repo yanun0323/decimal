@@ -892,9 +892,8 @@ func (su *DecimalSuite) TestIsNegative() {
 
 func (su *DecimalSuite) TestEqual() {
 	testCases := []struct {
-		desc string
-		d1   Decimal
-		d2   Decimal
+		desc   string
+		d1, d2 Decimal
 	}{
 		{
 			d1: "123456.88",
@@ -917,8 +916,7 @@ func (su *DecimalSuite) TestEqual() {
 func (su *DecimalSuite) TestGreater() {
 	testCases := []struct {
 		desc     string
-		d1       Decimal
-		d2       Decimal
+		d1, d2   Decimal
 		expected bool
 	}{
 		{
@@ -964,8 +962,7 @@ func (su *DecimalSuite) TestGreater() {
 func (su *DecimalSuite) TestLess() {
 	testCases := []struct {
 		desc     string
-		d1       Decimal
-		d2       Decimal
+		d1, d2   Decimal
 		expected bool
 	}{
 		{
@@ -1011,8 +1008,7 @@ func (su *DecimalSuite) TestLess() {
 func (su *DecimalSuite) TestGreaterOrEqual() {
 	testCases := []struct {
 		desc     string
-		d1       Decimal
-		d2       Decimal
+		d1, d2   Decimal
 		expected bool
 	}{
 		{
@@ -1058,8 +1054,7 @@ func (su *DecimalSuite) TestGreaterOrEqual() {
 func (su *DecimalSuite) TestLessOrEqual() {
 	testCases := []struct {
 		desc     string
-		d1       Decimal
-		d2       Decimal
+		d1, d2   Decimal
 		expected bool
 	}{
 		{
@@ -1119,7 +1114,7 @@ func (su *DecimalSuite) TestRemoveDecimalPoint() {
 func (su *DecimalSuite) TestMul() {
 	testCases := []struct {
 		desc     string
-		d1, d2   string
+		d1, d2   Decimal
 		expected string
 	}{
 		{
@@ -1162,8 +1157,45 @@ func (su *DecimalSuite) TestMul() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
-			result := Decimal(tc.d1).Mul(Decimal(tc.d2))
+			result := tc.d1.Mul(tc.d2)
 			su.Equal(tc.expected, result.String(), "%s * %s = %s", tc.d1, tc.d2, tc.expected)
+		})
+	}
+}
+
+func (su *DecimalSuite) TestDiv() {
+	testCases := []struct {
+		desc     string
+		d1, d2   Decimal
+		expected string
+	}{
+		{
+			d1:       "123123123",
+			d2:       "123",
+			expected: "1001001",
+		},
+		{
+			d1:       "-123123123",
+			d2:       "123",
+			expected: "-1001001",
+		},
+		{
+			d1:       "123123123",
+			d2:       "-123",
+			expected: "-1001001",
+		},
+		{
+			d1:       "10000",
+			d2:       "300",
+			expected: "33.3333333333333333",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			result := tc.d1.Div(tc.d2)
+			su.Equal(tc.expected, result.String())
 		})
 	}
 }
