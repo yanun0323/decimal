@@ -565,6 +565,23 @@ func blanker(d Decimal) Decimal {
 	return d
 }
 
+// Sign returns:
+//
+//	-1 if d <  0
+//	 0 if d == 0
+//	+1 if d >  0
+func (d Decimal) Sign() int {
+	if d.IsZero() {
+		return 0
+	}
+
+	if d.IsNegative() {
+		return -1
+	}
+
+	return 1
+}
+
 // IsZero return d == 0
 func (d Decimal) IsZero() bool {
 	return len(d) == 0 || d.String() == "0"
@@ -817,22 +834,47 @@ func (d Decimal) Div(d2 Decimal) Decimal {
 	return Decimal(decimal.RequireFromString(string(d)).Div(decimal.RequireFromString(string(d2))).String())
 }
 
-func (d Decimal) DivWorking(d2 Decimal) Decimal {
-	decimal.DivisionPrecision = DivisionPrecision
-	d1Pure, rightCount1 := removeDecimalPoint(string(d))
-	d2Pure, rightCount2 := removeDecimalPoint(string(d2))
+// func (d Decimal) DivWorking(d2 Decimal) Decimal {
+// 	decimal.DivisionPrecision = DivisionPrecision
+// 	d1Pure, rightCount1 := removeDecimalPoint(string(d))
+// 	d2Pure, rightCount2 := removeDecimalPoint(string(d2))
 
-	offset := (len(d) - rightCount1 - 1) - (len(d2) - rightCount2 - 1)
-	if offset > 0 {
-		d2Pure = append(d2Pure, bytes.Repeat([]byte{'0'}, offset)...)
-	} else {
-		d1Pure = append(d1Pure, bytes.Repeat([]byte{'0'}, -offset)...)
-	}
+// 	precision := 10
+// 	dp := (len(d) - rightCount1 - 1) - (len(d2) - rightCount2 - 1)
 
-	var findTimes func(t int)
-	findTimes = func(t int) {
+// 	// length > 0 means the length of d1Pure is longer than d2Pure
+// 	length := len(d1Pure) - len(d2Pure)
+// 	if length > 0 {
+// 		d2Pure = append(d2Pure, bytes.Repeat([]byte{'0'}, length)...)
+// 	} else {
+// 		d1Pure = append(d1Pure, bytes.Repeat([]byte{'0'}, -length)...)
+// 	}
 
-	}
-	_ = findTimes
-	return d
-}
+// 	num := []byte{9, 8, 7, 6, 5, 4, 3, 2, 1}
+// 	var loop func(a, b string) byte
+// 	loop = func(a, b string) byte {
+// 		can := make([]byte, 0, len(num))
+// 		can = append(can, num...)
+// 		cache := make([]byte, len(num))
+
+// 		offset := len(a) - len(b)
+// 		for i := 0; precision >= 0; precision-- {
+// 			for idx := 0; idx < len(can); {
+// 				cache[idx] = cache[idx]*10 + (a[i+offset] - '0')
+// 				cache[idx] -= can[idx] * (b[i+offset] - '0')
+// 				if cache[idx] < 0 {
+// 					cache = cache[1:]
+// 					can = can[1:]
+// 				} else {
+// 					idx++
+// 				}
+// 			}
+// 		}
+// 		if len(can) == 0 {
+// 			return 0
+// 		}
+// 		return can[0]
+// 	}
+
+// 	return d
+// }
