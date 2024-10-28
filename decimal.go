@@ -589,12 +589,12 @@ func (d Decimal) IsZero() bool {
 
 // IsPositive return d > 0
 func (d Decimal) IsPositive() bool {
-	return d[0] != '-' && !d.IsZero()
+	return !d.IsZero() && d[0] != '-'
 }
 
 // IsNegative return d < 0
 func (d Decimal) IsNegative() bool {
-	return d[0] == '-'
+	return len(d) == 0 || d[0] == '-'
 }
 
 // Equal return d == d2
