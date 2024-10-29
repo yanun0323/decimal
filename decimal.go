@@ -618,22 +618,20 @@ func (d Decimal) Greater(d2 Decimal) bool {
 //	**12.1****
 //	^ // <- pointer go backward
 func greater(d1, d2 Decimal) bool {
-	if d1.IsPositive() && d2.IsNegative() {
+	if d1.Sign() >= 0 && d2.IsNegative() {
 		return true
 	}
 
-	if d1.IsNegative() && d2.IsPositive() {
+	if d1.IsNegative() && d2.Sign() >= 0 {
 		return false
 	}
 
-	fb := []byte(d1)
-	sb := []byte(d2)
-	if fb[0] == '-' {
-		fb = fb[1:]
-		sb = sb[1:]
+	if d1[0] == '-' && d2[0] == '-' {
+		return less(d1[1:], d2[1:])
 	}
-	f, fDecimalPoint := findOrInsertDecimalPoint(fb)
-	s, sDecimalPoint := findOrInsertDecimalPoint(sb)
+
+	f, fDecimalPoint := findOrInsertDecimalPoint([]byte(d1))
+	s, sDecimalPoint := findOrInsertDecimalPoint([]byte(d2))
 
 	maxLenAfterDecimalPoint := max(len(f)-fDecimalPoint-1, len(s)-sDecimalPoint-1)
 
@@ -679,22 +677,20 @@ func (d Decimal) Less(d2 Decimal) bool {
 //	**12.1****
 //	^ // <- pointer go backward
 func less(d1, d2 Decimal) bool {
-	if d1.IsNegative() && d2.IsPositive() {
+	if d1.IsNegative() && d2.Sign() >= 0 {
 		return true
 	}
 
-	if d1.IsPositive() && d2.IsNegative() {
+	if d1.Sign() >= 0 && d2.IsNegative() {
 		return false
 	}
 
-	fb := []byte(d1)
-	sb := []byte(d2)
-	if fb[0] == '-' {
-		fb = fb[1:]
-		sb = sb[1:]
+	if d1[0] == '-' && d2[0] == '-' {
+		return greater(d1[1:], d2[1:])
 	}
-	f, fDecimalPoint := findOrInsertDecimalPoint(fb)
-	s, sDecimalPoint := findOrInsertDecimalPoint(sb)
+
+	f, fDecimalPoint := findOrInsertDecimalPoint([]byte(d1))
+	s, sDecimalPoint := findOrInsertDecimalPoint([]byte(d2))
 
 	maxLenAfterDecimalPoint := max(len(f)-fDecimalPoint-1, len(s)-sDecimalPoint-1)
 

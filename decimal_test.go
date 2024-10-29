@@ -949,6 +949,31 @@ func (su *DecimalSuite) TestGreater() {
 			d2:       "123456.89",
 			expected: false,
 		},
+		{
+			d1:       "-123456.89",
+			d2:       "-123456.88",
+			expected: false,
+		},
+		{
+			d1:       "-123456.89",
+			d2:       "-12345.888899",
+			expected: false,
+		},
+		{
+			d1:       "-0.00001",
+			d2:       "0",
+			expected: false,
+		},
+		{
+			d1:       "-0.00001",
+			d2:       "-0.00001",
+			expected: false,
+		},
+		{
+			d1:       "-12345.888899",
+			d2:       "-123456.89",
+			expected: true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -994,6 +1019,31 @@ func (su *DecimalSuite) TestLess() {
 			d1:       "123456.89",
 			d2:       "12345.888899",
 			expected: false,
+		},
+		{
+			d1:       "-123456.88",
+			d2:       "-123456.89",
+			expected: false,
+		},
+		{
+			d1:       "-12345.888899",
+			d2:       "-123456.89",
+			expected: false,
+		},
+		{
+			d1:       "0",
+			d2:       "-0.00001",
+			expected: false,
+		},
+		{
+			d1:       "-0.00001",
+			d2:       "-0.00001",
+			expected: false,
+		},
+		{
+			d1:       "-123456.89",
+			d2:       "-12345.888899",
+			expected: true,
 		},
 	}
 
@@ -1041,6 +1091,31 @@ func (su *DecimalSuite) TestGreaterOrEqual() {
 			d2:       "123456.89",
 			expected: false,
 		},
+		{
+			d1:       "-123456.89",
+			d2:       "-123456.88",
+			expected: false,
+		},
+		{
+			d1:       "-123456.89",
+			d2:       "-12345.888899",
+			expected: false,
+		},
+		{
+			d1:       "-0.00001",
+			d2:       "0",
+			expected: false,
+		},
+		{
+			d1:       "-0.00001",
+			d2:       "-0.00001",
+			expected: true,
+		},
+		{
+			d1:       "-12345.888899",
+			d2:       "-123456.89",
+			expected: true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -1086,6 +1161,31 @@ func (su *DecimalSuite) TestLessOrEqual() {
 			d1:       "123456.89",
 			d2:       "12345.888899",
 			expected: false,
+		},
+		{
+			d1:       "-123456.88",
+			d2:       "-123456.89",
+			expected: false,
+		},
+		{
+			d1:       "-12345.888899",
+			d2:       "-123456.89",
+			expected: false,
+		},
+		{
+			d1:       "0",
+			d2:       "-0.00001",
+			expected: false,
+		},
+		{
+			d1:       "-0.00001",
+			d2:       "-0.00001",
+			expected: true,
+		},
+		{
+			d1:       "-123456.89",
+			d2:       "-12345.888899",
+			expected: true,
 		},
 	}
 
