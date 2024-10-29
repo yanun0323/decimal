@@ -1289,6 +1289,11 @@ func (su *DecimalSuite) TestDiv() {
 			d2:       "300",
 			expected: "33.3333333333333333",
 		},
+		{
+			d1:       "10000",
+			d2:       "1",
+			expected: "10000",
+		},
 	}
 
 	for _, tc := range testCases {

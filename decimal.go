@@ -827,7 +827,7 @@ func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 // Div returns d / d2. If it doesn't divide exactly, the result will have DivisionPrecision digits after the decimal point.
 func (d Decimal) Div(d2 Decimal) Decimal {
 	decimal.DivisionPrecision = DivisionPrecision
-	return Decimal(decimal.RequireFromString(string(d)).Div(decimal.RequireFromString(string(d2))).String())
+	return Decimal(decimal.RequireFromString(string(blanker(d))).Div(decimal.RequireFromString(string(blanker(d2)))).String())
 }
 
 // func (d Decimal) DivWorking(d2 Decimal) Decimal {
