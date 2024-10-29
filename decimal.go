@@ -350,8 +350,8 @@ func unsignedAdd(base, addition []byte) string {
 	maxP := max(bDecimalPoint, aDecimalPoint)
 
 	p := maxP + maxLenAfterDecimalPoint
-	bShifting := (maxP - bDecimalPoint)
-	aShifting := (maxP - aDecimalPoint)
+	bShifting := maxP - bDecimalPoint
+	aShifting := maxP - aDecimalPoint
 
 	var (
 		delta        byte
@@ -411,8 +411,8 @@ func unsignedSub(base, subtraction []byte) string {
 	maxLenAfterDecimalPoint := max(len(b)-bDecimalPoint-1, len(s)-sDecimalPoint-1)
 	maxP := max(bDecimalPoint, sDecimalPoint)
 
-	bShifting := (maxP - bDecimalPoint)
-	sShifting := (maxP - sDecimalPoint)
+	bShifting := maxP - bDecimalPoint
+	sShifting := maxP - sDecimalPoint
 	if sShifting < bShifting {
 		return "-" + unsignedSub(s, b)
 	}
@@ -751,7 +751,7 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 	}
 
 	multiplied := multiplyPureNumber(a, b)
-	idx := (right1 + right2)
+	idx := right1 + right2
 	if idx == 0 {
 		return Decimal(prefix(minus) + tidy(multiplied, true))
 	}
@@ -802,7 +802,7 @@ func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 		if symbol2 == '0' {
 			continue
 		}
-		val2 = (symbol2 - '0')
+		val2 = symbol2 - '0'
 		idx = i + len(d1)
 		j = idx - i - 1
 		for ; idx >= 0; idx, j = idx-1, j-1 {
