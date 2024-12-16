@@ -1300,7 +1300,7 @@ func (su *DecimalSuite) TestDiv() {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
 			result := tc.d1.Div(tc.d2)
-			su.Equal(tc.expected, result.String())
+			su.Equal(tc.expected, result.String(), "%s / %s should be %s, but got %s", tc.d1, tc.d2, tc.expected, result.String())
 		})
 	}
 }

@@ -13,22 +13,29 @@ const (
 	_operatorAddition = "789.00456888"
 )
 
-func BenchmarkNew(b *testing.B) {
-	b.SkipNow()
-	for i := 0; i < b.N; i++ {
-		b, _ := New(_operatorBase)
-		_ = b
-	}
-}
-
-func Run(b *testing.B, shop, dec func(b *testing.B)) {
+func Run(b *testing.B, shopSprintDecimal, stringDecimal func(b *testing.B)) {
 	b.Run("ShopSpringDecimal", func(b *testing.B) {
-		shop(b)
+		shopSprintDecimal(b)
 	})
 
 	b.Run("Decimal", func(b *testing.B) {
-		dec(b)
+		stringDecimal(b)
 	})
+}
+
+func BenchmarkNewFromString(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, _ = decimal.NewFromString(_operatorBase)
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				_, _ = New(_operatorBase)
+			}
+		},
+	)
 }
 
 func BenchmarkAdd(b *testing.B) {
