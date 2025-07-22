@@ -1,138 +1,50 @@
 package decimal
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/shopspring/decimal"
 )
 
-// command:
-// go test -bench=. -run=none -benchmem .
 const (
 	_operatorBase     = "12,345,789.00456888"
 	_operatorAddition = "789.00456888"
 )
 
-func BenchmarkNew(b *testing.B) {
-	b.SkipNow()
-	for i := 0; i < b.N; i++ {
-		b, _ := New(_operatorBase)
-		_ = b
-	}
-}
-
 func Run(b *testing.B, shop, dec func(b *testing.B)) {
+
+	runtime.GC()
+	runtime.GC()
+
 	b.Run("ShopSpringDecimal", func(b *testing.B) {
 		shop(b)
 	})
+
+	runtime.GC()
+	runtime.GC()
 
 	b.Run("Decimal", func(b *testing.B) {
 		dec(b)
 	})
 }
 
-func BenchmarkAdd(b *testing.B) {
+func BenchmarkNew(b *testing.B) {
 	Run(b,
 		func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				b, _ := decimal.NewFromString(_operatorBase)
-				a, _ := decimal.NewFromString(_operatorAddition)
-				result := b.Add(a).Add(b)
-				ss := result.String()
-				_ = ss
+				for i := 0; i < 1; i++ {
+					dd, _ := decimal.NewFromString(_operatorBase)
+					_ = dd
+				}
 			}
 		},
 		func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				b, _ := New(_operatorBase)
-				a, _ := New(_operatorAddition)
-				result := b.Add(a).Add(a)
-				_ = result
-			}
-		},
-	)
-}
-
-func BenchmarkSub(b *testing.B) {
-	Run(b,
-		func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				b, _ := decimal.NewFromString(_operatorBase)
-				a, _ := decimal.NewFromString(_operatorAddition)
-				result := b.Sub(a).Sub(b)
-				ss := result.String()
-				_ = ss
-			}
-		},
-		func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				b, _ := New(_operatorBase)
-				a, _ := New(_operatorAddition)
-				result := b.Sub(a).Sub(a)
-				_ = result
-			}
-		},
-	)
-}
-
-func BenchmarkMul(b *testing.B) {
-	Run(b,
-		func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				d1, _ := decimal.NewFromString(_operatorBase)
-				d2, _ := decimal.NewFromString(_operatorAddition)
-				_ = d1.Mul(d2)
-			}
-		},
-		func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				d1, _ := New(_operatorBase)
-				d2, _ := New(_operatorAddition)
-				_ = d1.Mul(d2)
-			}
-		},
-	)
-}
-
-func BenchmarkDiv(b *testing.B) {
-	Run(b,
-		func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				d1, _ := decimal.NewFromString(_operatorBase)
-				d2, _ := decimal.NewFromString(_operatorAddition)
-				_ = d1.Div(d2)
-			}
-		},
-		func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				d1, _ := New(_operatorBase)
-				d2, _ := New(_operatorAddition)
-				_ = d1.Div(d2)
-			}
-		},
-	)
-}
-
-func BenchmarkShift(b *testing.B) {
-	Run(b,
-		func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				d, _ := decimal.NewFromString(_operatorBase)
-				s := d.Shift(8).String()
-				_ = s
-				d2, _ := decimal.NewFromString(_operatorBase)
-				s2 := d2.Shift(-8).String()
-				_ = s2
-			}
-		},
-		func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				d, _ := New(_operatorBase)
-				s := d.Shift(8)
-				_ = s
-				d2, _ := New(_operatorBase)
-				s2 := d2.Shift(-8)
-				_ = s2
+				for i := 0; i < 1; i++ {
+					dd, _ := New(_operatorBase)
+					_ = dd
+				}
 			}
 		},
 	)
@@ -192,6 +104,75 @@ func BenchmarkTruncate(b *testing.B) {
 				d2, _ := New(_operatorBase)
 				s2 := d2.Truncate(-8)
 				_ = s2
+			}
+		},
+	)
+}
+
+func BenchmarkShift(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := decimal.NewFromString(_operatorBase)
+				s := d.Shift(8).String()
+				_ = s
+				d2, _ := decimal.NewFromString(_operatorBase)
+				s2 := d2.Shift(-8).String()
+				_ = s2
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := New(_operatorBase)
+				s := d.Shift(8)
+				_ = s
+				d2, _ := New(_operatorBase)
+				s2 := d2.Shift(-8)
+				_ = s2
+			}
+		},
+	)
+}
+
+func BenchmarkAdd(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				b, _ := decimal.NewFromString(_operatorBase)
+				a, _ := decimal.NewFromString(_operatorAddition)
+				result := b.Add(a).Add(b)
+				ss := result.String()
+				_ = ss
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				b, _ := New(_operatorBase)
+				a, _ := New(_operatorAddition)
+				result := b.Add(a).Add(a)
+				_ = result
+			}
+		},
+	)
+}
+
+func BenchmarkSub(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				b, _ := decimal.NewFromString(_operatorBase)
+				a, _ := decimal.NewFromString(_operatorAddition)
+				result := b.Sub(a).Sub(b)
+				ss := result.String()
+				_ = ss
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				b, _ := New(_operatorBase)
+				a, _ := New(_operatorAddition)
+				result := b.Sub(a).Sub(a)
+				_ = result
 			}
 		},
 	)
@@ -300,6 +281,82 @@ func BenchmarkLess(b *testing.B) {
 				d1, _ := New(_operatorBase)
 				d2, _ := New(_operatorAddition)
 				_ = d1.Less(d2)
+			}
+		},
+	)
+}
+
+func BenchmarkGreaterOrEqual(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				d2, _ := decimal.NewFromString(_operatorAddition)
+				_ = d1.GreaterThanOrEqual(d2)
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				d2, _ := New(_operatorAddition)
+				_ = d1.GreaterOrEqual(d2)
+			}
+		},
+	)
+}
+
+func BenchmarkLessOrEqual(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				d2, _ := decimal.NewFromString(_operatorAddition)
+				_ = d1.LessThanOrEqual(d2)
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				d2, _ := New(_operatorAddition)
+				_ = d1.LessOrEqual(d2)
+			}
+		},
+	)
+}
+
+func BenchmarkMul(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				d2, _ := decimal.NewFromString(_operatorAddition)
+				_ = d1.Mul(d2)
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				d2, _ := New(_operatorAddition)
+				_ = d1.Mul(d2)
+			}
+		},
+	)
+}
+
+func BenchmarkDiv(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				d2, _ := decimal.NewFromString(_operatorAddition)
+				_ = d1.Div(d2)
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				d2, _ := New(_operatorAddition)
+				_ = d1.Div(d2)
 			}
 		},
 	)

@@ -71,6 +71,31 @@ func (su *DecimalSuite) TestNewDecimal() {
 			expected: "0",
 		},
 		{
+			desc:     "Empty String",
+			input:    "0",
+			expected: "0",
+		},
+		{
+			desc:     "Dot String",
+			input:    ".",
+			expected: "0",
+		},
+		{
+			desc:     "Dot Zero String",
+			input:    ".0",
+			expected: "0",
+		},
+		{
+			desc:     "Zero Dot Zero String",
+			input:    "0.0",
+			expected: "0",
+		},
+		{
+			desc:     "Zero Dot String",
+			input:    "0.",
+			expected: "0",
+		},
+		{
 			desc:     "Empty String After Dropping",
 			input:    "+,,,",
 			hasError: true,
@@ -787,9 +812,10 @@ func TestShift(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.input, func(t *testing.T) {
 			t.Log(tc.input)
-			result, err := New(tc.input)
+			d, err := New(tc.input)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expected, result.Shift(tc.shift).String())
+			shifted := d.Shift(tc.shift)
+			assert.Equal(t, tc.expected, shifted.String(), "input: %s, shift: %d, expected: %s, got: %s", tc.input, tc.shift, tc.expected, shifted.String())
 		})
 	}
 }
@@ -814,6 +840,22 @@ func (su *DecimalSuite) TestIsZero() {
 	}{
 		{
 			d:        "0",
+			expected: true,
+		},
+		{
+			d:        "0.0",
+			expected: true,
+		},
+		{
+			d:        "00.0000",
+			expected: true,
+		},
+		{
+			d:        ".0",
+			expected: true,
+		},
+		{
+			d:        ".0",
 			expected: true,
 		},
 		{
@@ -843,6 +885,10 @@ func (su *DecimalSuite) TestIsPositive() {
 		{
 			d:        "123456.88",
 			expected: true,
+		},
+		{
+			d:        "0",
+			expected: false,
 		},
 		{
 			d:        "0",
