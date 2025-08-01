@@ -1,7 +1,6 @@
 package decimal
 
 import (
-	"bytes"
 	"strings"
 )
 
@@ -534,7 +533,7 @@ func (d Decimal) IsPositive() bool {
 }
 
 func (d Decimal) isPositive() bool {
-	return !d.isZero() && !d.isNegative()
+	return isPositive(normalize([]byte(d)))
 }
 
 // IsNegative return d < 0
@@ -553,213 +552,101 @@ func (d Decimal) Equal(d2 Decimal) bool {
 
 // Greater return d > d2
 func (d Decimal) Greater(d2 Decimal) bool {
-	return greater(verify(d), verify(d2))
-}
-
-// greater return true if the d1 > d2
-//
-//	example: 1234.001 vs 12.00001
-//	1234.001**
-//	**12.00001
-//	^ // <- pointer go backward
-//	example: 1234.00001 vs 12.1
-//	1234.00001
-//	**12.1****
-//	^ // <- pointer go backward
-func greater(d1, d2 Decimal) bool {
-	if d1.isPositive() && d2.isNegative() {
-		return true
-	}
-
-	if d1.isNegative() && d2.isPositive() {
-		return false
-	}
-
-	fb := []byte(d1)
-	sb := []byte(d2)
-	if fb[0] == '-' {
-		fb = fb[1:]
-		sb = sb[1:]
-	}
-	f, fDecimalPoint := findOrInsertDecimalPoint(fb)
-	s, sDecimalPoint := findOrInsertDecimalPoint(sb)
-
-	maxLenAfterDecimalPoint := max(len(f)-fDecimalPoint-1, len(s)-sDecimalPoint-1)
-
-	if fDecimalPoint != sDecimalPoint {
-		return fDecimalPoint > sDecimalPoint
-	}
-
-	count := fDecimalPoint + maxLenAfterDecimalPoint + 1
-	for i := 0; i < count; i++ {
-		if len(f) == i {
-			return false
-		}
-
-		if len(s) == i {
-			return true
-		}
-
-		if f[i] == '.' {
-			continue
-		}
-
-		if f[i] != s[i] {
-			return f[i] > s[i]
-		}
-	}
-
-	return false
+	return greater(normalize([]byte(d)), normalize([]byte(d2)))
 }
 
 // Less return d < d2
 func (d Decimal) Less(d2 Decimal) bool {
-	return less(verify(d), verify(d2))
-}
-
-// less return true if the d1 < d2
-//
-//	example: 1234.001 vs 12.00001
-//	1234.001**
-//	**12.00001
-//	^ // <- pointer go backward
-//	example: 1234.00001 vs 12.1
-//	1234.00001
-//	**12.1****
-//	^ // <- pointer go backward
-func less(d1, d2 Decimal) bool {
-	if d1.isNegative() && d2.isPositive() {
-		return true
-	}
-
-	if d1.isPositive() && d2.isNegative() {
-		return false
-	}
-
-	fb := []byte(d1)
-	sb := []byte(d2)
-	if fb[0] == '-' {
-		fb = fb[1:]
-		sb = sb[1:]
-	}
-	f, fDecimalPoint := findOrInsertDecimalPoint(fb)
-	s, sDecimalPoint := findOrInsertDecimalPoint(sb)
-
-	maxLenAfterDecimalPoint := max(len(f)-fDecimalPoint-1, len(s)-sDecimalPoint-1)
-
-	if fDecimalPoint != sDecimalPoint {
-		return fDecimalPoint < sDecimalPoint
-	}
-
-	count := fDecimalPoint + maxLenAfterDecimalPoint + 1
-	for i := 0; i < count; i++ {
-		if len(f) == i {
-			return true
-		}
-
-		if len(s) == i {
-			return false
-		}
-
-		if f[i] == '.' {
-			continue
-		}
-
-		if f[i] != s[i] {
-			return f[i] < s[i]
-		}
-	}
-
-	return false
+	return less(normalize([]byte(d)), normalize([]byte(d2)))
 }
 
 // GreaterOrEqual return d >= d2
 func (d Decimal) GreaterOrEqual(d2 Decimal) bool {
-	return !d.Less(d2)
+	return !less(normalize([]byte(d)), normalize([]byte(d2)))
 }
 
 // LessOrEqual return d <= d2
 func (d Decimal) LessOrEqual(d2 Decimal) bool {
-	return !d.Greater(d2)
+	return !greater(normalize([]byte(d)), normalize([]byte(d2)))
 }
 
 // Mul return d * d2
 func (d Decimal) Mul(d2 Decimal) Decimal {
-	if d.isZero() || d2.isZero() {
-		return Zero()
+	a := normalize([]byte(d))
+	b := normalize([]byte(d2))
+
+	if isZero(a) || isZero(b) {
+		return zero
 	}
 
-	d = verify(d)
-	d2 = verify(d2)
+	right1 := findDotIndex(a)
+	if right1 == -1 {
+		right1 = 0
+	} else {
+		a = remove(a, right1)
+		right1 = len(a) - right1
+	}
 
-	a, right1 := removeDecimalPoint([]byte(d))
-	b, right2 := removeDecimalPoint([]byte(d2))
+	right2 := findDotIndex(b)
+	if right2 == -1 {
+		right2 = 0
+	} else {
+		b = remove(b, right2)
+		right2 = len(b) - right2
+	}
 
 	minus := false
 	if a[0] == '-' {
-		a = a[1:]
+		a = trimFront(a, 1)
 		minus = !minus
 	}
 
 	if b[0] == '-' {
-		b = b[1:]
+		b = trimFront(b, 1)
 		minus = !minus
 	}
 
-	multiplied := multiplyPureNumber(a, b, minus)
+	// 200ns
+	multiplied := multiplyPureNumber(a, b)
 	idx := right1 + right2
 	if idx == 0 {
-		return tidy(multiplied)
+		if minus {
+			return "-" + Decimal(multiplied)
+		}
+
+		return Decimal(multiplied)
 	}
 
 	idx = len(multiplied) - idx
-	buf := make([]byte, 0, len(multiplied)+1)
-	buf = append(buf, multiplied[:idx]...)
-	buf = append(buf, '.')
-	buf = append(buf, multiplied[idx:]...)
+	multiplied = insert(multiplied, idx, '.')
 
-	return tidy(buf)
+	if minus {
+		return "-" + Decimal(multiplied)
+	}
+
+	return Decimal(multiplied)
 }
 
 // removeDecimalPoint removes decimal point and return the count of the digit right the decimal
-func removeDecimalPoint(s []byte, shift ...uint) (result []byte, countOfRightSide int) {
-	if len(shift) == 0 || shift[0] == 0 {
-		for i := range s {
-			if s[i] == '.' {
-				return append(s[:i], s[i+1:]...), len(s) - i - 1
-			}
-		}
-		return s, 0
-	}
-
-	sf := int(shift[0])
-	result = make([]byte, 0, len(s)+sf)
-
+func removeDecimalPoint(s []byte) (result []byte, countOfRightSide int) {
 	for i := range s {
 		if s[i] == '.' {
-			result = append(result, s[:i]...)
-			result = append(result, s[i+1:]...)
-			for i := 0; i < sf; i++ {
-				result = append(result, '0')
-			}
-			return result, len(s) - i - 1 + sf
+			return remove(s, i), len(s) - i - 1
 		}
 	}
-
-	result = append(result, s...)
-	result = append(result, bytes.Repeat([]byte{'0'}, sf)...)
-	return result, sf
+	return s, 0
 }
 
 // multiplyPureNumber return d1 * d2, d1 & d2 must contain only number 0~9
-func multiplyPureNumber(d1 []byte, d2 []byte, isMinus bool) []byte {
+func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 	if len(d1) < len(d2) {
 		d1, d2 = d2, d1
 	}
 
 	var (
+		extraCap   = 2
 		len1, len2 = len(d1), len(d2)
-		result     = make([]byte, len1+len2+1)
+		result     = make([]byte, len1+len2+extraCap)
 		resultIdx  int
 		carry      byte
 		val1, val2 byte
@@ -791,17 +678,10 @@ func multiplyPureNumber(d1 []byte, d2 []byte, isMinus bool) []byte {
 		}
 	}
 
-	var temp byte
 	// Convert to ASCII in-place - no additional memory allocation
-	for i := len(result) - 2; i >= 0; i-- {
-		temp = result[i]
-		result[i+1] = temp + '0'
+	for i := range result {
+		result[i] += '0'
 	}
 
-	if isMinus {
-		result[0] = '-'
-		return result
-	}
-
-	return result[1:]
+	return trimBack(result, extraCap)
 }

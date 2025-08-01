@@ -1,10 +1,13 @@
 # Decimal
+
 A super efficient decimal base on string type.
 
 ## Requirements
+
 #### _GO 1.21 or higher_
 
 ## Import
+
 ```go
 import "github.com/yanun0323/decimal"
 ```
@@ -17,6 +20,7 @@ import "github.com/yanun0323/decimal"
 - JSON and XML serialization/deserialization as string
 
 ## Supported
+
 - Initial from string
 - Addition
 - Subtraction
@@ -28,6 +32,7 @@ import "github.com/yanun0323/decimal"
 - Compare like equal, greater, less, greater or equal, less or equal
 
 ## Usage
+
 ```go
 // create decimal
 zero := decimal.Zero()
@@ -78,6 +83,7 @@ result := d1.Sub(d2).Shift(-5).Add(d1).Truncate(3).String()
 ```
 
 ## Benchmark
+
 Compare to [github.com/shopspring/decimal](https://github.com/shopspring/decimal)
 
 - **Overall Speed**: 1.4-4.2x faster across all operations

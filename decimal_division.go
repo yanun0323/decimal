@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	shiftUint = uint(32)
+	shiftUint = 32
 )
 
 // Div returns d / d2. Ultra-optimized for trading performance.
@@ -21,7 +21,10 @@ func (d Decimal) Div(d2 Decimal) Decimal {
 		return Zero()
 	}
 
-	ib, iShift := removeDecimalPoint([]byte(d), shiftUint)
+	ib, iShift := removeDecimalPoint([]byte(d))
+	ib = shift(ib, shiftUint)
+	iShift += shiftUint
+
 	i, ok := new(big.Int).SetString(string(ib), 10)
 	if !ok {
 		panic("convert decimal to big int")

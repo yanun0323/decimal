@@ -1153,7 +1153,7 @@ func (su *DecimalSuite) TestMultiplyPureNumber() {
 	d1 := []byte("12345")
 	d2 := []byte("5648935")
 
-	result := string(multiplyPureNumber(d1, d2, false))
+	result := string(multiplyPureNumber(d1, d2))
 	su.Equal("069736102575", result)
 }
 

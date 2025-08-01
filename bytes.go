@@ -294,52 +294,52 @@ func shift(buf []byte, sf int) []byte {
 //	1234.00001
 //	**12.1****
 //		     ^ // <- pointer go forward
-func unsignedAdd(b, a []byte) []byte {
-	bDecimalPoint := findDotIndex(b)
-	if bDecimalPoint == -1 {
-		b = pushBack(b, '.')
-		bDecimalPoint = len(b) - 1
-	}
-
-	aDecimalPoint := findDotIndex(a)
-	if aDecimalPoint == -1 {
+func unsignedAdd(a, b []byte) []byte {
+	aDotIdx := findDotIndex(a)
+	if aDotIdx == -1 {
 		a = pushBack(a, '.')
-		aDecimalPoint = len(a) - 1
+		aDotIdx = len(a) - 1
 	}
 
-	maxLenAfterDecimalPoint := max(len(b)-bDecimalPoint-1, len(a)-aDecimalPoint-1)
-	maxP := max(bDecimalPoint, aDecimalPoint)
+	bDotIdx := findDotIndex(b)
+	if bDotIdx == -1 {
+		b = pushBack(b, '.')
+		bDotIdx = len(b) - 1
+	}
 
-	resultLen := maxP + maxLenAfterDecimalPoint + 2 // +2 for carry and decimal point
+	maxLenAfterDotIdx := max(len(a)-aDotIdx-1, len(b)-bDotIdx-1)
+	maxP := max(aDotIdx, bDotIdx)
+
+	resultLen := maxP + maxLenAfterDotIdx + 2 // +2 for carry and decimal point
 	result := make([]byte, resultLen)
 
-	p := maxP + maxLenAfterDecimalPoint
-	bShifting := maxP - bDecimalPoint
-	aShifting := maxP - aDecimalPoint
+	p := maxP + maxLenAfterDotIdx
+	aShifting := maxP - aDotIdx
+	bShifting := maxP - bDotIdx
 
 	var (
 		delta        byte
-		bChar, aChar byte
-		bP, aP       int
+		aChar, bChar byte
+		aP, bP       int
 		resultIdx    int = resultLen - 1
 	)
 
 	for ; p >= 0; p-- {
-		bChar, aChar = '0', '0'
-		if bP = p - bShifting; bP >= 0 && bP < len(b) {
-			bChar = b[bP]
-		}
+		aChar, bChar = '0', '0'
 		if aP = p - aShifting; aP >= 0 && aP < len(a) {
 			aChar = a[aP]
 		}
+		if bP = p - bShifting; bP >= 0 && bP < len(b) {
+			bChar = b[bP]
+		}
 
-		if bChar == '.' {
+		if aChar == '.' {
 			result[resultIdx] = '.'
 			resultIdx--
 			continue
 		}
 
-		delta += (bChar - '0') + (aChar - '0')
+		delta += (aChar - '0') + (bChar - '0')
 		if delta <= 9 {
 			result[resultIdx] = delta + '0'
 			delta = 0
@@ -368,59 +368,59 @@ func unsignedAdd(b, a []byte) []byte {
 //	1234.00001
 //	**12.1****
 //		     ^ // <- pointer go forward
-func unsignedSub(b, s []byte) []byte {
-	bDecimalPoint := findDotIndex(b)
-	if bDecimalPoint == -1 {
+func unsignedSub(a, b []byte) []byte {
+	aDotIdx := findDotIndex(a)
+	if aDotIdx == -1 {
+		a = pushBack(a, '.')
+		aDotIdx = len(a) - 1
+	}
+
+	bDotIdx := findDotIndex(b)
+	if bDotIdx == -1 {
 		b = pushBack(b, '.')
-		bDecimalPoint = len(b) - 1
+		bDotIdx = len(b) - 1
 	}
 
-	sDecimalPoint := findDotIndex(s)
-	if sDecimalPoint == -1 {
-		s = pushBack(s, '.')
-		sDecimalPoint = len(s) - 1
-	}
+	maxLenAfterDotIdx := max(len(a)-aDotIdx-1, len(b)-bDotIdx-1)
+	maxP := max(aDotIdx, bDotIdx)
 
-	maxLenAfterDecimalPoint := max(len(b)-bDecimalPoint-1, len(s)-sDecimalPoint-1)
-	maxP := max(bDecimalPoint, sDecimalPoint)
-
-	resultLen := maxP + maxLenAfterDecimalPoint + 1 // +1 for decimal point
+	resultLen := maxP + maxLenAfterDotIdx + 1 // +1 for decimal point
 	result := make([]byte, resultLen)
 
-	p := maxP + maxLenAfterDecimalPoint
-	bShifting := maxP - bDecimalPoint
-	sShifting := maxP - sDecimalPoint
+	p := maxP + maxLenAfterDotIdx
+	aShifting := maxP - aDotIdx
+	bShifting := maxP - bDotIdx
 
 	// Quick check: if shifting difference indicates subtraction is larger
-	if sShifting < bShifting {
-		return pushFront(unsignedSub(s, b), '-')
+	if bShifting < aShifting {
+		return pushFront(unsignedSub(b, a), '-')
 	}
 
 	var (
-		bChar, sChar byte
-		bP, sP       int
+		aChar, bChar byte
+		aP, bP       int
 		resultIdx    int = resultLen - 1
 		borrow       int8
 	)
 
 	// If equal shifting, need to compare digit by digit to determine sign
-	if sShifting == bShifting {
-		count := max(len(b)+bShifting, len(s)+sShifting)
+	if bShifting == aShifting {
+		count := max(len(a)+aShifting, len(b)+bShifting)
 		for p := 0; p < count; p++ {
-			bChar, sChar = '0', '0'
+			aChar, bChar = '0', '0'
+			if aP = p - aShifting; aP >= 0 && aP < len(a) {
+				aChar = a[aP]
+			}
 			if bP = p - bShifting; bP >= 0 && bP < len(b) {
 				bChar = b[bP]
 			}
-			if sP = p - sShifting; sP >= 0 && sP < len(s) {
-				sChar = s[sP]
-			}
 
-			if bChar == sChar || bChar == '.' {
+			if aChar == bChar || aChar == '.' {
 				continue
 			}
 
-			if sChar > bChar {
-				return pushFront(unsignedSub(s, b), '-')
+			if bChar > aChar {
+				return pushFront(unsignedSub(b, a), '-')
 			}
 			break
 		}
@@ -428,21 +428,21 @@ func unsignedSub(b, s []byte) []byte {
 
 	// Perform subtraction from right to left
 	for ; p >= 0; p-- {
-		bChar, sChar = '0', '0'
+		aChar, bChar = '0', '0'
+		if aP = p - aShifting; aP >= 0 && aP < len(a) {
+			aChar = a[aP]
+		}
 		if bP = p - bShifting; bP >= 0 && bP < len(b) {
 			bChar = b[bP]
 		}
-		if sP = p - sShifting; sP >= 0 && sP < len(s) {
-			sChar = s[sP]
-		}
 
-		if bChar == '.' {
+		if aChar == '.' {
 			result[resultIdx] = '.'
 			resultIdx--
 			continue
 		}
 
-		diff := int8(bChar-'0') - int8(sChar-'0') - borrow
+		diff := int8(aChar-'0') - int8(bChar-'0') - borrow
 		if diff < 0 {
 			result[resultIdx] = byte(10+diff) + '0'
 			borrow = 1
@@ -458,7 +458,10 @@ func unsignedSub(b, s []byte) []byte {
 
 func isZero(buf []byte) bool {
 	for _, c := range buf {
-		if c != '0' && c != '.' {
+		switch c {
+		case '0', '.':
+			continue
+		default:
 			return false
 		}
 	}
@@ -467,4 +470,136 @@ func isZero(buf []byte) bool {
 
 func isNegative(buf []byte) bool {
 	return buf[0] == '-'
+}
+
+func isPositive(buf []byte) bool {
+	return !isNegative(buf) && !isZero(buf)
+}
+
+// greater return true if the d1 > d2
+//
+//	example: 1234.001 vs 12.00001
+//	1234.001**
+//	**12.00001
+//	^ // <- pointer go backward
+//	example: 1234.00001 vs 12.1
+//	1234.00001
+//	**12.1****
+//	^ // <- pointer go backward
+func greater(a, b []byte) bool {
+	if isPositive(a) && isNegative(b) {
+		return true
+	}
+
+	if isNegative(b) && isPositive(a) {
+		return false
+	}
+
+	if a[0] == '-' {
+		a = trimFront(a, 1)
+		b = trimFront(b, 1)
+	}
+
+	aDotIdx := findDotIndex(a)
+	if aDotIdx == -1 {
+		a = pushBack(a, '.')
+		aDotIdx = len(a) - 1
+	}
+
+	bDotIdx := findDotIndex(b)
+	if bDotIdx == -1 {
+		b = pushBack(b, '.')
+		bDotIdx = len(b) - 1
+	}
+
+	maxLenAfterDotIdx := max(len(a)-aDotIdx-1, len(b)-bDotIdx-1)
+
+	if aDotIdx != bDotIdx {
+		return aDotIdx > bDotIdx
+	}
+
+	count := aDotIdx + maxLenAfterDotIdx + 1
+	for i := 0; i < count; i++ {
+		if len(a) == i {
+			return false
+		}
+
+		if len(b) == i {
+			return true
+		}
+
+		if a[i] == '.' {
+			continue
+		}
+
+		if a[i] != b[i] {
+			return a[i] > b[i]
+		}
+	}
+
+	return false
+}
+
+// less return true if the d1 < d2
+//
+//	example: 1234.001 vs 12.00001
+//	1234.001**
+//	**12.00001
+//	^ // <- pointer go backward
+//	example: 1234.00001 vs 12.1
+//	1234.00001
+//	**12.1****
+//	^ // <- pointer go backward
+func less(a, b []byte) bool {
+	if isNegative(a) && isPositive(b) {
+		return true
+	}
+
+	if isPositive(a) && isNegative(b) {
+		return false
+	}
+
+	if a[0] == '-' {
+		a = trimFront(a, 1)
+		b = trimFront(b, 1)
+	}
+
+	aDotIdx := findDotIndex(a)
+	if aDotIdx == -1 {
+		a = pushBack(a, '.')
+		aDotIdx = len(a) - 1
+	}
+
+	bDotIdx := findDotIndex(b)
+	if bDotIdx == -1 {
+		b = pushBack(b, '.')
+		bDotIdx = len(b) - 1
+	}
+
+	maxLenAfterDotIdx := max(len(a)-aDotIdx-1, len(b)-bDotIdx-1)
+
+	if aDotIdx != bDotIdx {
+		return aDotIdx < bDotIdx
+	}
+
+	count := aDotIdx + maxLenAfterDotIdx + 1
+	for i := 0; i < count; i++ {
+		if len(a) == i {
+			return true
+		}
+
+		if len(b) == i {
+			return false
+		}
+
+		if a[i] == '.' {
+			continue
+		}
+
+		if a[i] != b[i] {
+			return a[i] < b[i]
+		}
+	}
+
+	return false
 }
