@@ -9,3 +9,4 @@
 *.yaml
 go.work
 Makefile
+example

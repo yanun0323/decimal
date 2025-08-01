@@ -239,7 +239,13 @@ func (su *DecimalSuite) TestTruncate() {
 			desc:     "Negative Truncate",
 			input:    "123.123",
 			truncate: -1,
-			expected: "123.123",
+			expected: "120",
+		},
+		{
+			desc:     "Negative Overflow Truncate",
+			input:    "123.123",
+			truncate: -3,
+			expected: "0",
 		},
 		{
 			desc:     "Natural Number",
@@ -1147,12 +1153,12 @@ func (su *DecimalSuite) TestMultiplyPureNumber() {
 	d1 := []byte("12345")
 	d2 := []byte("5648935")
 
-	result := string(multiplyPureNumber(d1, d2))
+	result := string(multiplyPureNumber(d1, d2, false))
 	su.Equal("069736102575", result)
 }
 
 func (su *DecimalSuite) TestRemoveDecimalPoint() {
-	result, right := removeDecimalPoint("123.45678")
+	result, right := removeDecimalPoint([]byte("123.45678"))
 	su.Equal("12345678", string(result))
 	su.Equal(5, right)
 }
@@ -1216,9 +1222,49 @@ func (su *DecimalSuite) TestDiv() {
 		expected string
 	}{
 		{
+			d1:       "123",
+			d2:       "123",
+			expected: "1",
+		},
+		{
 			d1:       "123123123",
 			d2:       "123",
 			expected: "1001001",
+		},
+		{
+			d1:       "123123.123",
+			d2:       "0.123",
+			expected: "1001001",
+		},
+		{
+			d1:       "0.000123",
+			d2:       "0.123",
+			expected: "0.001",
+		},
+		{
+			d1:       "-0.000123123123",
+			d2:       "0.123",
+			expected: "-0.001001001",
+		},
+		{
+			d1:       "-0.000123",
+			d2:       "0.123",
+			expected: "-0.001",
+		},
+		{
+			d1:       "-0.000123123123",
+			d2:       "-0.123",
+			expected: "0.001001001",
+		},
+		{
+			d1:       "-0.000123",
+			d2:       "-0.123",
+			expected: "0.001",
+		},
+		{
+			d1:       "0.000123123123",
+			d2:       "0.123",
+			expected: "0.001001001",
 		},
 		{
 			d1:       "-123123123",
@@ -1235,13 +1281,44 @@ func (su *DecimalSuite) TestDiv() {
 			d2:       "300",
 			expected: "33.3333333333333333",
 		},
+		{
+			d1:       "10000",
+			d2:       "1",
+			expected: "10000",
+		},
+		{
+			d1:       "10000",
+			d2:       "10",
+			expected: "1000",
+		},
+		{
+			d1:       "10000",
+			d2:       "1000000",
+			expected: "0.01",
+		},
+		{
+			d1:       "10000",
+			d2:       "1000",
+			expected: "10",
+		},
+		{
+			d1:       "84658.4",
+			d2:       "333.452",
+			expected: "253.8848170051461679",
+		},
 	}
 
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
-			t.Log(tc.desc)
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("%s, %s, %s, %s", tc.desc, tc.d1, tc.d2, r)
+				}
+			}()
 			result := tc.d1.Div(tc.d2)
-			su.Equal(tc.expected, result.String())
+			su.Equal(tc.expected, result.String(),
+				"input: %s, %s, expected: %s, result: %s",
+				tc.d1, tc.d2, tc.expected, result)
 		})
 	}
 }

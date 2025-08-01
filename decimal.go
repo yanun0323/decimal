@@ -1,20 +1,20 @@
 package decimal
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/shopspring/decimal"
 )
 
 /*
-有没有办法优化的更快速、并且不消耗额外的记忆体
+在不影响逻辑正确性的前提下, 优化此函数，让他运行的更快速、消耗更少记忆体
 */
 
 var (
 	DivisionPrecision = 16
 	zero              = Decimal("0")
+	one               = Decimal("1")
 )
 
 // Zero return the zero decimal
@@ -35,66 +35,63 @@ func New(s string) (Decimal, error) {
 
 func newDecimal(s string) (Decimal, error) {
 	if len(s) == 0 {
-		return Zero(), nil
-	}
-
-	switch s {
-	case "0", "0.", "0.0", ".0":
 		return zero, nil
 	}
 
-	// Use strings.Builder to avoid repeated allocations
-	var buf strings.Builder
-	buf.Grow(len(s)) // Pre-allocate capacity
+	switch s {
+	case "", "0", "0.", "0.0", ".0":
+		return zero, nil
+	}
 
+	buf := []byte(s)
 	dot := false
 	firstChar := true
+	i := 0
+	var b byte
 
-	for i := 0; i < len(s); i++ {
-		b := s[i]
+	for i < len(buf) {
+		b = buf[i]
 
 		if firstChar {
 			// Handle first character
 			switch b {
 			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '-':
-				buf.WriteByte(b)
 				if b == '.' {
 					dot = true
 				}
 			case '+':
-				// Drop '+' sign
+				buf = buf[1:]
 				continue
 			default:
-				return Zero(), fmt.Errorf("invalid symbol (%c) in %s", b, s)
+				return zero, fmt.Errorf("invalid symbol (%c) in %s", b, s)
 			}
 			firstChar = false
 		} else {
 			// Handle subsequent characters
 			switch b {
 			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-				buf.WriteByte(b)
 			case '.':
 				if dot {
-					return Zero(), errors.New("duplicate dot")
+					return zero, errors.New("duplicate dot")
 				}
 				dot = true
-				buf.WriteByte(b)
 			case '_', ',':
-				// Drop these characters
+				buf = append(buf[:i], buf[i+1:]...)
 				continue
 			default:
-				return Zero(), fmt.Errorf("invalid symbol (%c) in %s", b, s)
+				return zero, fmt.Errorf("invalid symbol (%c) in %s", b, s)
 			}
 		}
+
+		i++
 	}
 
-	if buf.Len() == 0 {
-		return Zero(), errors.New("can't convert to Decimal empty string")
+	if len(buf) == 0 {
+		return zero, errors.New("can't convert to Decimal empty string")
 	}
 
-	result := buf.String()
+	return tidy(buf), nil
 
-	return Decimal(tidyString(result, !dot)), nil
 }
 
 // Require returns a new Decimal from a string representation or panics if New would have returned an error.
@@ -156,32 +153,48 @@ func (d Decimal) Neg() Decimal {
 //	d, _ := decimal.New("123.456")
 //	d.Truncate(2).String() // "123.45"
 func (d Decimal) Truncate(i int) Decimal {
-	d = verify(d)
-	if i < 0 {
-		return d
-	}
-
-	index := -1
+	return verify(d).truncate(i)
+}
+func (d Decimal) truncate(i int) Decimal {
+	dotIdx := -1
 	for j := range d {
 		if d[j] == '.' {
-			index = j
+			dotIdx = j
 			break
 		}
 	}
 
-	if index == -1 {
+	if i < 0 { // positive
+		i = -i
+		if dotIdx != -1 {
+			d = d[:dotIdx]
+		}
+
+		if i == 0 {
+			return d
+		}
+
+		if i >= len(d) {
+			return zero
+		}
+
+		return Decimal(combineToDecimal(string(d[:len(d)-i]), strings.Repeat("0", i)))
+	}
+
+	// negative
+	if dotIdx == -1 {
 		return d
 	}
 
 	if i == 0 {
-		return Decimal(d[:index])
+		return d[:dotIdx]
 	}
 
-	p := index + i + 1
+	p := dotIdx + i + 1
 	if p >= len(d) {
 		return d
 	}
-	return Decimal(d[:p])
+	return d[:p]
 }
 
 const (
@@ -202,7 +215,43 @@ const (
 //	d.Shift(3).String()  // "3000"
 //	d.Shift(-3).String() // "0.003"
 func (d Decimal) Shift(shift int) Decimal {
-	d = verify(d)
+	return verify(d).shift(shift)
+}
+
+func (d Decimal) shiftNew(shift int) Decimal {
+	s := string(d)
+	switch s {
+	case _zero, _zeroDot, _zeroDotZero, _dotZero:
+		return zero
+	}
+
+	if shift == 0 {
+		return d
+	}
+
+	buf, dotFromRight := removeDecimalPoint([]byte(s), shiftUint)
+	dotFromRight += shift
+	dotFromLeft := len(buf) - dotFromRight
+	if dotFromLeft <= 0 {
+		return zero
+	}
+
+	if dotFromLeft == len(buf) {
+		return Decimal(buf)
+	}
+
+	if dotFromLeft < len(buf) {
+		b := buf
+		b = append(b, buf[:dotFromLeft]...)
+		b = append(b, '.')
+		b = append(b, buf[dotFromLeft:]...)
+		return Decimal(b)
+	}
+
+	return combineToDecimal(string(buf), ".", strings.Repeat("0", dotFromLeft-len(buf)))
+}
+
+func (d Decimal) shift(shift int) Decimal {
 	s := string(d)
 	switch s {
 	case _zero, _zeroDot, _zeroDotZero, _dotZero:
@@ -220,14 +269,19 @@ func (d Decimal) Shift(shift int) Decimal {
 	return shiftNegative(s, -shift)
 }
 
-func combineStrings(ss ...string) string {
+func combineToDecimal(ss ...string) Decimal {
 	builder := strings.Builder{}
+	l := 0
+	for i := range ss {
+		l += len(ss[i])
+	}
+	builder.Grow(l)
 
 	for _, s := range ss {
 		builder.WriteString(s)
 	}
 
-	return builder.String()
+	return Decimal(builder.String())
 }
 
 // shiftPositive shifts decimal left. example: 3 to 300
@@ -242,7 +296,7 @@ func shiftPositive(s string, shift int) Decimal {
 
 	switch len(ss) {
 	case 1:
-		return Decimal(combineStrings(prefix(isMinus), ss[0], strings.Repeat(_zero, shift)))
+		return combineToDecimal(prefix(isMinus), ss[0], strings.Repeat(_zero, shift))
 	case 2:
 		builder := strings.Builder{}
 
@@ -258,12 +312,12 @@ func shiftPositive(s string, shift int) Decimal {
 			builder.WriteString(suffixes[:shift])
 			builder.WriteByte('.')
 			builder.WriteString(suffixes[shift:])
-			return Decimal(tidyString(builder.String()))
+			return tidyString(builder.String())
 		} else {
 			// When shift >= len(suffixes), result is an integer
 			builder.WriteString(suffixes)
 			builder.WriteString(strings.Repeat(_zero, shift-len(suffixes)))
-			return Decimal(tidyString(builder.String(), true)) // noDecimalPoint = true
+			return tidyString(builder.String())
 		}
 	default:
 		return zero
@@ -301,7 +355,7 @@ func shiftNegative(s string, shift int) Decimal {
 			builder.WriteByte('.')
 			builder.WriteString(intPart[len(intPart)-shift:])
 		}
-		return Decimal(tidyString(builder.String()))
+		return tidyString(builder.String())
 
 	case 2:
 		// Decimal case: e.g., "123.456" shift 2 -> "1.23456"
@@ -328,7 +382,7 @@ func shiftNegative(s string, shift int) Decimal {
 			builder.WriteByte('.')
 			builder.WriteString(allDigits[splitPos:])
 		}
-		return Decimal(tidyString(builder.String()))
+		return tidyString(builder.String())
 
 	default:
 		return Zero()
@@ -349,18 +403,18 @@ func (d Decimal) Add(d2 Decimal) Decimal {
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
 	if baseNegative && additionNegative {
-		return "-" + Decimal(unsignedAdd(b[1:], a[1:]))
+		return "-" + unsignedAdd(b[1:], a[1:])
 	}
 
 	if baseNegative {
-		return Decimal(unsignedSub(a, b[1:]))
+		return unsignedSub(a, b[1:])
 	}
 
 	if additionNegative {
-		return Decimal(unsignedSub(b, a[1:]))
+		return unsignedSub(b, a[1:])
 	}
 
-	return Decimal(unsignedAdd(b, a))
+	return unsignedAdd(b, a)
 }
 
 // Sub return d - d2
@@ -377,18 +431,18 @@ func (d Decimal) Sub(d2 Decimal) Decimal {
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
 	if baseNegative && additionNegative {
-		return Decimal(unsignedSub(a[1:], b[1:]))
+		return unsignedSub(a[1:], b[1:])
 	}
 
 	if baseNegative {
-		return "-" + Decimal(unsignedAdd(b[1:], a))
+		return "-" + unsignedAdd(b[1:], a)
 	}
 
 	if additionNegative {
-		return Decimal(unsignedAdd(b, a[1:]))
+		return unsignedAdd(b, a[1:])
 	}
 
-	return Decimal(unsignedSub(b, a))
+	return unsignedSub(b, a)
 }
 
 // unsignedAdd add two unsigned string with shifting
@@ -401,7 +455,7 @@ func (d Decimal) Sub(d2 Decimal) Decimal {
 //	1234.00001
 //	**12.1****
 //		     ^ // <- pointer go forward
-func unsignedAdd(base, addition []byte) string {
+func unsignedAdd(base, addition []byte) Decimal {
 	b, bDecimalPoint := findOrInsertDecimalPoint(base)
 	a, aDecimalPoint := findOrInsertDecimalPoint(addition)
 
@@ -466,7 +520,7 @@ func unsignedAdd(base, addition []byte) string {
 //	1234.00001
 //	**12.1****
 //		     ^ // <- pointer go forward
-func unsignedSub(base, subtraction []byte) string {
+func unsignedSub(base, subtraction []byte) Decimal {
 	b, bDecimalPoint := findOrInsertDecimalPoint(base)
 	s, sDecimalPoint := findOrInsertDecimalPoint(subtraction)
 
@@ -560,24 +614,32 @@ func findOrInsertDecimalPoint(num []byte) ([]byte, int) {
 }
 
 // clean the zero and dot of prefixes and suffixes
-func tidy(num []byte, noDecimalPoint ...bool) string {
-	return tidyString(string(num), noDecimalPoint...)
+func tidy(num []byte) Decimal {
+	return tidyString(string(num))
 }
 
 // clean the zero and dot of prefixes and suffixes
-func tidyString(num string, noDecimalPoint ...bool) string {
+func tidyString(num string) Decimal {
 	if len(num) == 0 {
 		return _zero
 	}
 
+	hasDot := false
+	for _, c := range num {
+		if c == '.' {
+			hasDot = true
+			break
+		}
+	}
+
 	// Handle sign prefix
-	var sign string
+	var sign bool
 	start := 0
 	switch num[0] {
 	case '+':
 		start = 1
 	case '-':
-		sign = "-"
+		sign = true
 		start = 1
 	}
 
@@ -591,12 +653,9 @@ func tidyString(num string, noDecimalPoint ...bool) string {
 		return _zero
 	}
 
-	// Determine if we should remove decimal point
-	noDP := len(noDecimalPoint) > 0 && noDecimalPoint[0]
-
 	// Find end position
 	end := len(num)
-	if !noDP {
+	if hasDot {
 		// Remove trailing zeros (but not if noDecimalPoint is true)
 		for end > start && num[end-1] == '0' {
 			end--
@@ -626,10 +685,10 @@ func tidyString(num string, noDecimalPoint ...bool) string {
 
 	// Handle leading decimal point
 	if len(result) > 0 && result[0] == '.' {
-		if sign != "" {
-			return sign + _zero + result
+		if sign {
+			return combineToDecimal("-", _zero, result)
 		}
-		return _zero + result
+		return combineToDecimal(_zero, result)
 	}
 
 	// Handle single decimal point
@@ -637,7 +696,11 @@ func tidyString(num string, noDecimalPoint ...bool) string {
 		return _zero
 	}
 
-	return sign + result
+	if sign {
+		return combineToDecimal("-", result)
+	}
+
+	return Decimal(result)
 }
 
 func max(a, b int) int {
@@ -654,6 +717,15 @@ func prefix(isMinus bool) string {
 	}
 	return ""
 }
+
+// DecimalPattern is a regex pattern to validate decimal string format
+//
+// Rules:
+// 1. First character can only contain "+-1234567890"
+// 2. Last character can only contain "1234567890"
+// 3. Middle characters can only contain "1234567890."
+// 4. Cannot have consecutive "."
+// var decimalPattern = regexp.MustCompile(`^[+\-0-9]([0-9]*\.?[0-9]*)*[0-9]$|^[+\-]?[0-9]$|^[+\-]?[0-9]*\.[0-9]+$`)
 
 // verify makes sure Decimal is valid for calculation
 func verify(d Decimal) Decimal {
@@ -720,7 +792,11 @@ func (d Decimal) isNegative() bool {
 
 // Equal return d == d2
 func (d Decimal) Equal(d2 Decimal) bool {
-	return verify(d) == verify(d2)
+	return verify(d).equal(verify(d2))
+}
+
+func (d Decimal) equal(d2 Decimal) bool {
+	return d == d2
 }
 
 // Greater return d > d2
@@ -861,11 +937,11 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 		return Zero()
 	}
 
-	// d = verify(d)
-	// d2 = verify(d2)
+	d = verify(d)
+	d2 = verify(d2)
 
-	a, right1 := removeDecimalPoint(string(d))
-	b, right2 := removeDecimalPoint(string(d2))
+	a, right1 := removeDecimalPoint([]byte(d))
+	b, right2 := removeDecimalPoint([]byte(d2))
 
 	minus := false
 	if a[0] == '-' {
@@ -878,10 +954,10 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 		minus = !minus
 	}
 
-	multiplied := multiplyPureNumber(a, b)
+	multiplied := multiplyPureNumber(a, b, minus)
 	idx := right1 + right2
 	if idx == 0 {
-		return Decimal(prefix(minus) + tidy(multiplied, true))
+		return tidy(multiplied)
 	}
 
 	idx = len(multiplied) - idx
@@ -890,47 +966,68 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 	buf = append(buf, '.')
 	buf = append(buf, multiplied[idx:]...)
 
-	return Decimal(prefix(minus) + tidy(buf))
+	return tidy(buf)
 }
 
 // removeDecimalPoint removes decimal point and return the count of the digit right the decimal
-func removeDecimalPoint(s string) (result []byte, countOfRightSide int) {
-	idx := -1
+func removeDecimalPoint(s []byte, shift ...uint) (result []byte, countOfRightSide int) {
+	if len(shift) == 0 || shift[0] == 0 {
+		for i := range s {
+			if s[i] == '.' {
+				return append(s[:i], s[i+1:]...), len(s) - i - 1
+			}
+		}
+		return s, 0
+	}
+
+	sf := int(shift[0])
+	result = make([]byte, 0, len(s)+sf)
+
 	for i := range s {
 		if s[i] == '.' {
-			idx = i
-			break
+			result = append(result, s[:i]...)
+			result = append(result, s[i+1:]...)
+			for i := 0; i < sf; i++ {
+				result = append(result, '0')
+			}
+			return result, len(s) - i - 1 + sf
 		}
 	}
-	if idx == -1 {
-		return []byte(s), 0
-	}
-	return append([]byte(s[:idx]), s[idx+1:]...), len(s) - idx - 1
+
+	result = append(result, s...)
+	result = append(result, bytes.Repeat([]byte{'0'}, sf)...)
+	return result, sf
 }
 
 // multiplyPureNumber return d1 * d2, d1 & d2 must contain only number 0~9
-func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
+func multiplyPureNumber(d1 []byte, d2 []byte, isMinus bool) []byte {
 	if len(d1) < len(d2) {
 		d1, d2 = d2, d1
 	}
 
-	len1, len2 := len(d1), len(d2)
-	result := make([]byte, len1+len2)
+	var (
+		len1, len2 = len(d1), len(d2)
+		result     = make([]byte, len1+len2+1)
+		resultIdx  int
+		carry      byte
+		val1, val2 byte
+		prod       byte
+	)
 
 	// Optimized multiplication using single loop with carry propagation
 	for i := len2 - 1; i >= 0; i-- {
-		val2 := d2[i] - '0'
+		val2 = d2[i] - '0'
 		if val2 == 0 {
 			continue
 		}
 
-		carry := byte(0)
-		resultIdx := i + len1
+		carry = 0
+		resultIdx = i + len1
 
 		// Inner multiplication loop
 		for j := len1 - 1; j >= 0; j-- {
-			val1 := d1[j] - '0'
-			prod := val1*val2 + result[resultIdx] + carry
+			val1 = d1[j] - '0'
+			prod = val1*val2 + result[resultIdx] + carry
 			result[resultIdx] = prod % 10
 			carry = prod / 10
 			resultIdx--
@@ -942,16 +1039,17 @@ func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 		}
 	}
 
+	var temp byte
 	// Convert to ASCII in-place - no additional memory allocation
-	for i := range result {
-		result[i] += '0'
+	for i := len(result) - 2; i >= 0; i-- {
+		temp = result[i]
+		result[i+1] = temp + '0'
 	}
 
-	return result
-}
+	if isMinus {
+		result[0] = '-'
+		return result
+	}
 
-// Div returns d / d2. If it doesn't divide exactly, the result will have DivisionPrecision digits after the decimal point.
-func (d Decimal) Div(d2 Decimal) Decimal {
-	decimal.DivisionPrecision = DivisionPrecision
-	return Decimal(decimal.RequireFromString(string(d)).Div(decimal.RequireFromString(string(d2))).String())
+	return result[1:]
 }
