@@ -507,17 +507,7 @@ func (d Decimal) IsZero() bool {
 		return true
 	}
 
-	d = verify(d)
-
-	for _, c := range d {
-		switch c {
-		case '0', '.':
-			continue
-		default:
-			return false
-		}
-	}
-	return true
+	return isZero(normalize([]byte(d)))
 }
 
 func (d Decimal) isZero() bool {

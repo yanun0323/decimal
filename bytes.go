@@ -455,3 +455,12 @@ func unsignedSub(b, s []byte) []byte {
 
 	return tidyBytes(trimFront(result, resultIdx+1))
 }
+
+func isZero(buf []byte) bool {
+	for _, c := range buf {
+		if c != '0' && c != '.' {
+			return false
+		}
+	}
+	return true
+}
