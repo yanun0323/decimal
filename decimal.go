@@ -303,24 +303,30 @@ func shiftNegative(s string, shift int) Decimal {
 //	d2, _ := decimal.New("90.99")
 //	d1.Add(d2).String() // "190.01"
 func (d Decimal) Add(d2 Decimal) Decimal {
-	d, d2 = verify(d), verify(d2)
-
-	b, a := []byte(d), []byte(d2.String())
+	b, a := normalize([]byte(d)), normalize([]byte(d2))
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
 	if baseNegative && additionNegative {
-		return "-" + unsignedAdd(b[1:], a[1:])
+		b = trimFront(b, 1)
+		a = trimFront(a, 1)
+		// -b - -a = - (b+a)
+		return Decimal(pushFront(unsignedAdd(b, a), '-'))
 	}
 
 	if baseNegative {
-		return unsignedSub(a, b[1:])
+		b = trimFront(b, 1)
+		// -b + a = a - b
+		return Decimal(unsignedSub(a, b))
 	}
 
 	if additionNegative {
-		return unsignedSub(b, a[1:])
+		a = trimFront(a, 1)
+		// b + -a = b - a
+		return Decimal(unsignedSub(b, a))
 	}
 
-	return unsignedAdd(b, a)
+	// b + a = b + a
+	return Decimal(unsignedAdd(b, a))
 }
 
 // Sub return d - d2
@@ -331,24 +337,30 @@ func (d Decimal) Add(d2 Decimal) Decimal {
 //	d2, _ := decimal.New("90.99")
 //	d1.Sub(d2).String() // "9.01"
 func (d Decimal) Sub(d2 Decimal) Decimal {
-	d, d2 = verify(d), verify(d2)
-
-	b, a := []byte(d), []byte(d2.String())
+	b, a := normalize([]byte(d)), normalize([]byte(d2))
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
 	if baseNegative && additionNegative {
-		return unsignedSub(a[1:], b[1:])
+		b = trimFront(b, 1)
+		a = trimFront(a, 1)
+		// -b - -a = -b + a = a - b
+		return Decimal(unsignedSub(a, b))
 	}
 
 	if baseNegative {
-		return "-" + unsignedAdd(b[1:], a)
+		b = trimFront(b, 1)
+		// -b - a = - (b + a)
+		return Decimal(pushFront(unsignedAdd(a, b), '-'))
 	}
 
 	if additionNegative {
-		return unsignedAdd(b, a[1:])
+		a = trimFront(a, 1)
+		// b - -a = b + a
+		return Decimal(unsignedAdd(b, a))
 	}
 
-	return unsignedSub(b, a)
+	// b - a = b - a
+	return Decimal(unsignedSub(b, a))
 }
 
 // findOrInsertDecimalPoint find the index of decimal point. (if no decimal point, it will insert it into the end of the number)

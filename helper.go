@@ -68,6 +68,11 @@ func pushFront[T any](slice []T, values ...T) []T {
 	return buf
 }
 
+func pushBack[T any](slice []T, values ...T) []T {
+	extend(slice, len(slice)+len(values))
+	return append(slice, values...)
+}
+
 // remove removes the element at the given index and returns the slice without the element.
 //
 // It keeps the capacity of the slice.

@@ -294,9 +294,18 @@ func shift(buf []byte, sf int) []byte {
 //	1234.00001
 //	**12.1****
 //		     ^ // <- pointer go forward
-func unsignedAdd(base, addition []byte) Decimal {
-	b, bDecimalPoint := findOrInsertDecimalPoint(base)
-	a, aDecimalPoint := findOrInsertDecimalPoint(addition)
+func unsignedAdd(b, a []byte) []byte {
+	bDecimalPoint := findDotIndex(b)
+	if bDecimalPoint == -1 {
+		b = pushBack(b, '.')
+		bDecimalPoint = len(b) - 1
+	}
+
+	aDecimalPoint := findDotIndex(a)
+	if aDecimalPoint == -1 {
+		a = pushBack(a, '.')
+		aDecimalPoint = len(a) - 1
+	}
 
 	maxLenAfterDecimalPoint := max(len(b)-bDecimalPoint-1, len(a)-aDecimalPoint-1)
 	maxP := max(bDecimalPoint, aDecimalPoint)
@@ -343,10 +352,10 @@ func unsignedAdd(base, addition []byte) Decimal {
 
 	if delta > 0 {
 		result[resultIdx] = delta + '0'
-		return tidy(result[resultIdx:])
+		return tidyBytes(trimFront(result, resultIdx))
 	}
 
-	return tidy(result[resultIdx+1:])
+	return tidyBytes(trimFront(result, resultIdx+1))
 }
 
 // unsignedSub subtract two unsigned string with shifting
@@ -359,9 +368,18 @@ func unsignedAdd(base, addition []byte) Decimal {
 //	1234.00001
 //	**12.1****
 //		     ^ // <- pointer go forward
-func unsignedSub(base, subtraction []byte) Decimal {
-	b, bDecimalPoint := findOrInsertDecimalPoint(base)
-	s, sDecimalPoint := findOrInsertDecimalPoint(subtraction)
+func unsignedSub(b, s []byte) []byte {
+	bDecimalPoint := findDotIndex(b)
+	if bDecimalPoint == -1 {
+		b = pushBack(b, '.')
+		bDecimalPoint = len(b) - 1
+	}
+
+	sDecimalPoint := findDotIndex(s)
+	if sDecimalPoint == -1 {
+		s = pushBack(s, '.')
+		sDecimalPoint = len(s) - 1
+	}
 
 	maxLenAfterDecimalPoint := max(len(b)-bDecimalPoint-1, len(s)-sDecimalPoint-1)
 	maxP := max(bDecimalPoint, sDecimalPoint)
@@ -375,7 +393,7 @@ func unsignedSub(base, subtraction []byte) Decimal {
 
 	// Quick check: if shifting difference indicates subtraction is larger
 	if sShifting < bShifting {
-		return "-" + unsignedSub(s, b)
+		return pushFront(unsignedSub(s, b), '-')
 	}
 
 	var (
@@ -402,7 +420,7 @@ func unsignedSub(base, subtraction []byte) Decimal {
 			}
 
 			if sChar > bChar {
-				return "-" + unsignedSub(s, b)
+				return pushFront(unsignedSub(s, b), '-')
 			}
 			break
 		}
@@ -435,5 +453,5 @@ func unsignedSub(base, subtraction []byte) Decimal {
 		resultIdx--
 	}
 
-	return tidy(result[resultIdx+1:])
+	return tidyBytes(trimFront(result, resultIdx+1))
 }
