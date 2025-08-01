@@ -464,3 +464,7 @@ func isZero(buf []byte) bool {
 	}
 	return true
 }
+
+func isNegative(buf []byte) bool {
+	return buf[0] == '-'
+}

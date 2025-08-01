@@ -528,7 +528,9 @@ func (d Decimal) isZero() bool {
 
 // IsPositive return d > 0
 func (d Decimal) IsPositive() bool {
-	return verify(d).isPositive()
+	buf := normalize([]byte(d))
+
+	return !isZero(buf) && !isNegative(buf)
 }
 
 func (d Decimal) isPositive() bool {
@@ -537,7 +539,7 @@ func (d Decimal) isPositive() bool {
 
 // IsNegative return d < 0
 func (d Decimal) IsNegative() bool {
-	return verify(d).isNegative()
+	return isNegative([]byte(d))
 }
 
 func (d Decimal) isNegative() bool {
@@ -546,11 +548,7 @@ func (d Decimal) isNegative() bool {
 
 // Equal return d == d2
 func (d Decimal) Equal(d2 Decimal) bool {
-	return verify(d).equal(verify(d2))
-}
-
-func (d Decimal) equal(d2 Decimal) bool {
-	return d == d2
+	return string(normalize([]byte(d))) == string(normalize([]byte(d2)))
 }
 
 // Greater return d > d2
