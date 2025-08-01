@@ -3,23 +3,34 @@ package decimal
 import (
 	"errors"
 	"fmt"
+	"slices"
 )
 
 var (
 	zeroBytes = []byte{'0'}
 )
 
-func newDecimalBytes(s string) ([]byte, error) {
-	if len(s) == 0 {
+func quickCheckZero(buf []byte) bool {
+	switch string(buf) {
+	case "",
+		"0", ".",
+		"0.", ".0", "+0", "-0", "00",
+		"000", "0.0", ".00", "00.", "+00", "+0.", "-00", "-0.":
+		return true
+	default:
+		return false
+	}
+}
+
+func newDecimal(buf []byte) ([]byte, error) {
+	if len(buf) == 0 {
 		return zeroBytes, nil
 	}
 
-	switch s {
-	case "", "0", "0.", "0.0", ".0":
+	if quickCheckZero(buf) {
 		return zeroBytes, nil
 	}
 
-	buf := []byte(s)
 	dot := false
 	firstChar := true
 	i := 0
@@ -36,10 +47,10 @@ func newDecimalBytes(s string) ([]byte, error) {
 					dot = true
 				}
 			case '+':
-				buf = buf[1:]
+				buf = trimFront(buf, 1)
 				continue
 			default:
-				return zeroBytes, fmt.Errorf("invalid symbol (%c) in %s", b, s)
+				return zeroBytes, fmt.Errorf("invalid symbol (%c) in %s", b, string(buf))
 			}
 			firstChar = false
 		} else {
@@ -52,10 +63,10 @@ func newDecimalBytes(s string) ([]byte, error) {
 				}
 				dot = true
 			case '_', ',':
-				buf = append(buf[:i], buf[i+1:]...)
+				buf = remove(buf, i)
 				continue
 			default:
-				return zeroBytes, fmt.Errorf("invalid symbol (%c) in %s", b, s)
+				return zeroBytes, fmt.Errorf("invalid symbol (%c) in %s", b, string(buf))
 			}
 		}
 
@@ -76,13 +87,7 @@ func tidyBytes(num []byte) []byte {
 		return zeroBytes
 	}
 
-	hasDot := false
-	for _, c := range num {
-		if c == '.' {
-			hasDot = true
-			break
-		}
-	}
+	hasDot := slices.Contains(num, '.')
 
 	// Handle sign prefix
 	var sign bool
@@ -125,7 +130,7 @@ func tidyBytes(num []byte) []byte {
 	}
 
 	// Extract the significant part
-	result := num[start:end]
+	result := trim(num, start, end)
 
 	if len(result) == 0 {
 		return zeroBytes
@@ -153,4 +158,282 @@ func tidyBytes(num []byte) []byte {
 	}
 
 	return result
+}
+
+func findDotIndex(buf []byte) int {
+	for j := range buf {
+		if buf[j] == '.' {
+			return j
+		}
+	}
+
+	return -1
+}
+
+func normalize(buf []byte) []byte {
+	normalized, err := newDecimal(buf)
+	if err != nil {
+		panic(err)
+	}
+
+	return normalized
+}
+
+func truncate(buf []byte, i int) []byte {
+	dotIdx := findDotIndex(buf)
+
+	if i < 0 { // positive
+		i = -i
+		if dotIdx != -1 {
+			buf = buf[:dotIdx]
+		}
+
+		if i == 0 {
+			return buf
+		}
+
+		if i >= len(buf) {
+			return zeroBytes
+		}
+
+		{ // fill zeros to the right
+			for j := 1; j <= i; j++ {
+				buf[len(buf)-j] = '0'
+			}
+			return buf
+		}
+	}
+
+	// negative
+	if dotIdx == -1 {
+		return buf
+	}
+
+	if i == 0 {
+		return buf[:dotIdx]
+	}
+
+	p := dotIdx + i + 1
+	if p >= len(buf) {
+		return buf
+	}
+	return buf[:p]
+}
+
+// 100.123456789 sf=8
+// 100123456789
+// idx=3 tidx=11
+func shift(buf []byte, sf int) []byte {
+	if sf == 0 {
+		return buf
+	}
+
+	sign := false
+	if buf[0] == '-' {
+		sign = true
+		buf = trimFront(buf, 1)
+	}
+
+	// 123.456
+	// shift 5  -> 123456 -> 12345600
+	// shift -5 -> 123456 -> 0.00123456
+	// shift 2  -> 123456 -> 12345.6
+	idx := findDotIndex(buf)
+	if idx == -1 { // 123456
+		idx = len(buf)
+	}
+
+	// idx: 3
+	buf = remove(buf, idx)
+
+	// targetIdx: 3+5 = 8
+	// targetIdx: 3-5 = -2
+	// targetIdx: 3+2 = 5
+	targetIdx := idx + sf
+
+	if targetIdx >= len(buf) { // 12345600
+		buf = pushBackRepeat(buf, '0', targetIdx-len(buf))
+
+		if sign {
+			buf = pushFront(buf, '-')
+		}
+
+		return buf
+	}
+
+	if targetIdx < 0 { // 0.00123456
+		if sign {
+			buf = pushFrontRepeat(buf, '0', -targetIdx+3)
+			buf[0] = '-'
+			buf[2] = '.'
+		} else {
+			buf = pushFrontRepeat(buf, '0', -targetIdx+2)
+			buf[1] = '.'
+		}
+
+		return buf
+	}
+
+	// 12345.6
+	buf = insert(buf, targetIdx, '.')
+
+	if sign {
+		buf = pushFront(buf, '-')
+	}
+
+	return buf
+}
+
+// unsignedAdd add two unsigned string with shifting
+//
+//	example: 1234.001 add 12.00001
+//	1234.001**
+//	**12.00001
+//	         ^ // <- pointer go forward
+//	example: 1234.00001 add 12.1
+//	1234.00001
+//	**12.1****
+//		     ^ // <- pointer go forward
+func unsignedAdd(base, addition []byte) Decimal {
+	b, bDecimalPoint := findOrInsertDecimalPoint(base)
+	a, aDecimalPoint := findOrInsertDecimalPoint(addition)
+
+	maxLenAfterDecimalPoint := max(len(b)-bDecimalPoint-1, len(a)-aDecimalPoint-1)
+	maxP := max(bDecimalPoint, aDecimalPoint)
+
+	resultLen := maxP + maxLenAfterDecimalPoint + 2 // +2 for carry and decimal point
+	result := make([]byte, resultLen)
+
+	p := maxP + maxLenAfterDecimalPoint
+	bShifting := maxP - bDecimalPoint
+	aShifting := maxP - aDecimalPoint
+
+	var (
+		delta        byte
+		bChar, aChar byte
+		bP, aP       int
+		resultIdx    int = resultLen - 1
+	)
+
+	for ; p >= 0; p-- {
+		bChar, aChar = '0', '0'
+		if bP = p - bShifting; bP >= 0 && bP < len(b) {
+			bChar = b[bP]
+		}
+		if aP = p - aShifting; aP >= 0 && aP < len(a) {
+			aChar = a[aP]
+		}
+
+		if bChar == '.' {
+			result[resultIdx] = '.'
+			resultIdx--
+			continue
+		}
+
+		delta += (bChar - '0') + (aChar - '0')
+		if delta <= 9 {
+			result[resultIdx] = delta + '0'
+			delta = 0
+		} else {
+			result[resultIdx] = delta - 10 + '0'
+			delta = 1
+		}
+		resultIdx--
+	}
+
+	if delta > 0 {
+		result[resultIdx] = delta + '0'
+		return tidy(result[resultIdx:])
+	}
+
+	return tidy(result[resultIdx+1:])
+}
+
+// unsignedSub subtract two unsigned string with shifting
+//
+//	example: 1234.001 sub 12.00001
+//	1234.001**
+//	**12.00001
+//	         ^ // <- pointer go forward
+//	example: 1234.00001 sub 12.1
+//	1234.00001
+//	**12.1****
+//		     ^ // <- pointer go forward
+func unsignedSub(base, subtraction []byte) Decimal {
+	b, bDecimalPoint := findOrInsertDecimalPoint(base)
+	s, sDecimalPoint := findOrInsertDecimalPoint(subtraction)
+
+	maxLenAfterDecimalPoint := max(len(b)-bDecimalPoint-1, len(s)-sDecimalPoint-1)
+	maxP := max(bDecimalPoint, sDecimalPoint)
+
+	resultLen := maxP + maxLenAfterDecimalPoint + 1 // +1 for decimal point
+	result := make([]byte, resultLen)
+
+	p := maxP + maxLenAfterDecimalPoint
+	bShifting := maxP - bDecimalPoint
+	sShifting := maxP - sDecimalPoint
+
+	// Quick check: if shifting difference indicates subtraction is larger
+	if sShifting < bShifting {
+		return "-" + unsignedSub(s, b)
+	}
+
+	var (
+		bChar, sChar byte
+		bP, sP       int
+		resultIdx    int = resultLen - 1
+		borrow       int8
+	)
+
+	// If equal shifting, need to compare digit by digit to determine sign
+	if sShifting == bShifting {
+		count := max(len(b)+bShifting, len(s)+sShifting)
+		for p := 0; p < count; p++ {
+			bChar, sChar = '0', '0'
+			if bP = p - bShifting; bP >= 0 && bP < len(b) {
+				bChar = b[bP]
+			}
+			if sP = p - sShifting; sP >= 0 && sP < len(s) {
+				sChar = s[sP]
+			}
+
+			if bChar == sChar || bChar == '.' {
+				continue
+			}
+
+			if sChar > bChar {
+				return "-" + unsignedSub(s, b)
+			}
+			break
+		}
+	}
+
+	// Perform subtraction from right to left
+	for ; p >= 0; p-- {
+		bChar, sChar = '0', '0'
+		if bP = p - bShifting; bP >= 0 && bP < len(b) {
+			bChar = b[bP]
+		}
+		if sP = p - sShifting; sP >= 0 && sP < len(s) {
+			sChar = s[sP]
+		}
+
+		if bChar == '.' {
+			result[resultIdx] = '.'
+			resultIdx--
+			continue
+		}
+
+		diff := int8(bChar-'0') - int8(sChar-'0') - borrow
+		if diff < 0 {
+			result[resultIdx] = byte(10+diff) + '0'
+			borrow = 1
+		} else {
+			result[resultIdx] = byte(diff) + '0'
+			borrow = 0
+		}
+		resultIdx--
+	}
+
+	return tidy(result[resultIdx+1:])
 }

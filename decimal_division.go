@@ -5,8 +5,7 @@ import (
 )
 
 var (
-	shift     = 32
-	shiftUint = uint(shift)
+	shiftUint = uint(32)
 )
 
 // Div returns d / d2. Ultra-optimized for trading performance.
