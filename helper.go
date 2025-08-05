@@ -1,7 +1,7 @@
 package decimal
 
 // pushFront pushes values to the front of the slice
-func pushBackRepeat[T any](slice []T, value T, count int) []T {
+func pushBackRepeat(slice []byte, value byte, count int) []byte {
 	resultLen := len(slice) + count
 	if cap(slice) >= resultLen {
 		for ; count > 0; count-- {
@@ -11,7 +11,7 @@ func pushBackRepeat[T any](slice []T, value T, count int) []T {
 		return slice
 	}
 
-	buf := make([]T, resultLen)
+	buf := make([]byte, resultLen)
 	copy(buf, slice)
 	for i := len(slice); i < resultLen; i++ {
 		buf[i] = value
@@ -21,10 +21,10 @@ func pushBackRepeat[T any](slice []T, value T, count int) []T {
 }
 
 // pushFront pushes values to the front of the slice
-func pushFrontRepeat[T any](slice []T, value T, count int) []T {
+func pushFrontRepeat(slice []byte, value byte, count int) []byte {
 	resultLen := len(slice) + count
 	if cap(slice) >= resultLen {
-		for len(slice) < resultLen {
+		for i := resultLen - len(slice); i > 0; i-- {
 			slice = append(slice, value)
 		}
 
@@ -36,7 +36,7 @@ func pushFrontRepeat[T any](slice []T, value T, count int) []T {
 		return slice
 	}
 
-	buf := make([]T, resultLen)
+	buf := make([]byte, resultLen)
 	copy(buf[count:], slice)
 	for i := 0; i < count; i++ {
 		buf[i] = value
@@ -46,11 +46,11 @@ func pushFrontRepeat[T any](slice []T, value T, count int) []T {
 }
 
 // pushFront pushes values to the front of the slice
-func pushFront[T any](slice []T, values ...T) []T {
+func pushFront(slice []byte, values ...byte) []byte {
 	count := len(values)
 	resultLen := len(slice) + count
 	if cap(slice) >= resultLen {
-		var zero T
+		var zero byte
 		for len(slice) < resultLen {
 			slice = append(slice, zero)
 		}
@@ -61,14 +61,14 @@ func pushFront[T any](slice []T, values ...T) []T {
 		return slice
 	}
 
-	buf := make([]T, resultLen)
+	buf := make([]byte, resultLen)
 	copy(buf[count:], slice)
 	copy(buf, values)
 
 	return buf
 }
 
-func pushBack[T any](slice []T, values ...T) []T {
+func pushBack(slice []byte, values ...byte) []byte {
 	extend(slice, len(slice)+len(values))
 	return append(slice, values...)
 }
@@ -76,7 +76,7 @@ func pushBack[T any](slice []T, values ...T) []T {
 // remove removes the element at the given index and returns the slice without the element.
 //
 // It keeps the capacity of the slice.
-func remove[T any](slice []T, idx int) []T {
+func remove(slice []byte, idx int) []byte {
 	if idx < 0 || idx >= len(slice) {
 		return slice
 	}
@@ -84,15 +84,15 @@ func remove[T any](slice []T, idx int) []T {
 	return append(slice[:idx], slice[idx+1:]...)
 }
 
-func extend[T any](slice []T, targetCap int) []T {
+func extend(slice []byte, targetCap int) []byte {
 	if cap(slice) >= targetCap {
 		return slice
 	}
 
-	return append(make([]T, 0, targetCap), slice...)
+	return append(make([]byte, 0, targetCap), slice...)
 }
 
-func insert[T any](slice []T, idx int, value T) []T {
+func insert(slice []byte, idx int, value byte) []byte {
 	if idx < 0 || idx > len(slice) {
 		return slice
 	}
@@ -109,7 +109,7 @@ func insert[T any](slice []T, idx int, value T) []T {
 		return slice
 	}
 
-	buf := make([]T, len(slice)+1)
+	buf := make([]byte, len(slice)+1)
 	copy(buf, slice[:idx])
 	copy(buf[idx+1:], slice[idx:])
 	buf[idx] = value
@@ -120,7 +120,7 @@ func insert[T any](slice []T, idx int, value T) []T {
 // trimFront equals to slice[count:]
 //
 // It keeps the capacity of the slice.
-func trimFront[T any](slice []T, start int) []T {
+func trimFront(slice []byte, start int) []byte {
 	if start <= 0 {
 		return slice
 	}
@@ -135,7 +135,7 @@ func trimFront[T any](slice []T, start int) []T {
 // trimBack equals to slice[:len(slice)-end]
 //
 // It keeps the capacity of the slice.
-func trimBack[T any](slice []T, count int) []T {
+func trimBack(slice []byte, count int) []byte {
 	if count <= 0 {
 		return slice
 	}
@@ -150,7 +150,7 @@ func trimBack[T any](slice []T, count int) []T {
 // trim equals to slice[start:end]
 //
 // It keeps the capacity of the slice.
-func trim[T any](slice []T, start, end int) []T {
+func trim(slice []byte, start, end int) []byte {
 	if start >= len(slice) || end <= 0 {
 		return slice[:0]
 	}

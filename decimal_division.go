@@ -5,23 +5,23 @@ import (
 )
 
 var (
-	shiftUint = 32
+	shiftUint = 24
 )
 
 // Div returns d / d2. Ultra-optimized for trading performance.
 func (d Decimal) Div(d2 Decimal) Decimal {
-	d = verify(d)
-	d2 = verify(d2)
+	a := normalize([]byte(d))
+	b := normalize([]byte(d2))
 
-	if d2.isZero() {
+	if isZero(b) {
 		panic("division by zero")
 	}
 
-	if d.isZero() {
+	if isZero(a) {
 		return Zero()
 	}
 
-	ib, iShift := removeDecimalPoint([]byte(d))
+	ib, iShift := removeDecimalPoint(a)
 	ib = shift(ib, shiftUint)
 	iShift += shiftUint
 
@@ -30,7 +30,7 @@ func (d Decimal) Div(d2 Decimal) Decimal {
 		panic("convert decimal to big int")
 	}
 
-	ib2, i2Shift := removeDecimalPoint([]byte(d2))
+	ib2, i2Shift := removeDecimalPoint(b)
 	i2, ok := new(big.Int).SetString(string(ib2), 10)
 	if !ok {
 		panic("convert decimal to big int")
@@ -38,5 +38,5 @@ func (d Decimal) Div(d2 Decimal) Decimal {
 
 	i = i.Div(i, i2)
 
-	return Decimal(i.String()).shift(i2Shift - iShift).truncate(DivisionPrecision)
+	return Decimal(truncate(shift([]byte(i.String()), i2Shift-iShift), DivisionPrecision))
 }

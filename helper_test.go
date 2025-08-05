@@ -5,12 +5,12 @@ import (
 	"testing"
 )
 
-func newContainer(caps int, values []int) []int {
+func newContainer(caps int, values []byte) []byte {
 	if caps < len(values) {
 		caps = len(values)
 	}
 
-	buf := make([]int, 0, caps)
+	buf := make([]byte, 0, caps)
 	buf = append(buf, values...)
 
 	return buf
@@ -19,57 +19,57 @@ func newContainer(caps int, values []int) []int {
 func TestPushFront(t *testing.T) {
 	tests := []struct {
 		name   string
-		slice  []int
-		values []int
-		want   []int
+		slice  []byte
+		values []byte
+		want   []byte
 	}{
 		{
 			name:   "push front",
-			slice:  []int{1, 2, 3},
-			values: []int{4, 5, 6},
-			want:   []int{4, 5, 6, 1, 2, 3},
+			slice:  []byte{1, 2, 3},
+			values: []byte{4, 5, 6},
+			want:   []byte{4, 5, 6, 1, 2, 3},
 		},
 		{
 			name:   "push front with empty slice",
-			slice:  []int{},
-			values: []int{4, 5, 6},
-			want:   []int{4, 5, 6},
+			slice:  []byte{},
+			values: []byte{4, 5, 6},
+			want:   []byte{4, 5, 6},
 		},
 		{
 			name:   "push front with empty values",
-			slice:  []int{1, 2, 3},
-			values: []int{},
-			want:   []int{1, 2, 3},
+			slice:  []byte{1, 2, 3},
+			values: []byte{},
+			want:   []byte{1, 2, 3},
 		},
 		{
 			name:   "push front with slice and values",
-			slice:  []int{1, 2, 3},
-			values: []int{4, 5, 6},
-			want:   []int{4, 5, 6, 1, 2, 3},
+			slice:  []byte{1, 2, 3},
+			values: []byte{4, 5, 6},
+			want:   []byte{4, 5, 6, 1, 2, 3},
 		},
 		{
 			name:   "push front with slice and values",
-			slice:  []int{1, 2, 3},
-			values: []int{8},
-			want:   []int{8, 1, 2, 3},
+			slice:  []byte{1, 2, 3},
+			values: []byte{8},
+			want:   []byte{8, 1, 2, 3},
 		},
 		{
 			name:   "push front with slice and values",
-			slice:  newContainer(4, []int{1, 2, 3}),
-			values: []int{8},
-			want:   []int{8, 1, 2, 3},
+			slice:  newContainer(4, []byte{1, 2, 3}),
+			values: []byte{8},
+			want:   []byte{8, 1, 2, 3},
 		},
 		{
 			name:   "push front with slice and values",
-			slice:  newContainer(4, []int{1, 2, 3}),
-			values: []int{8, 9, 10},
-			want:   []int{8, 9, 10, 1, 2, 3},
+			slice:  newContainer(4, []byte{1, 2, 3}),
+			values: []byte{8, 9, 10},
+			want:   []byte{8, 9, 10, 1, 2, 3},
 		},
 		{
 			name:   "push front with slice and values",
-			slice:  newContainer(10, []int{1, 2, 3}),
-			values: []int{8, 9, 10},
-			want:   []int{8, 9, 10, 1, 2, 3},
+			slice:  newContainer(10, []byte{1, 2, 3}),
+			values: []byte{8, 9, 10},
+			want:   []byte{8, 9, 10, 1, 2, 3},
 		},
 	}
 
@@ -86,31 +86,31 @@ func TestPushFront(t *testing.T) {
 func TestPushBackRepeat(t *testing.T) {
 	tests := []struct {
 		name   string
-		slice  []int
+		slice  []byte
 		repeat int
-		value  int
-		want   []int
+		value  byte
+		want   []byte
 	}{
 		{
 			name:   "push front repeat",
-			slice:  []int{1, 2, 3},
+			slice:  []byte{1, 2, 3},
 			repeat: 2,
 			value:  4,
-			want:   []int{1, 2, 3, 4, 4},
+			want:   []byte{1, 2, 3, 4, 4},
 		},
 		{
 			name:   "push zero front repeat",
-			slice:  []int{1, 2, 3},
+			slice:  []byte{1, 2, 3},
 			repeat: 0,
 			value:  4,
-			want:   []int{1, 2, 3},
+			want:   []byte{1, 2, 3},
 		},
 		{
 			name:   "push front repeat with container",
-			slice:  newContainer(10, []int{1, 2, 3}),
+			slice:  newContainer(10, []byte{1, 2, 3}),
 			repeat: 2,
 			value:  5,
-			want:   []int{1, 2, 3, 5, 5},
+			want:   []byte{1, 2, 3, 5, 5},
 		},
 	}
 
@@ -125,12 +125,12 @@ func TestPushBackRepeat(t *testing.T) {
 }
 
 func TestPushFrontRepeat(t *testing.T) {
-	newContainer := func(caps int, values []int) []int {
+	newContainer := func(caps int, values []byte) []byte {
 		if caps < len(values) {
 			caps = len(values)
 		}
 
-		buf := make([]int, 0, caps)
+		buf := make([]byte, 0, caps)
 		buf = append(buf, values...)
 
 		return buf
@@ -138,31 +138,31 @@ func TestPushFrontRepeat(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		slice  []int
+		slice  []byte
 		repeat int
-		value  int
-		want   []int
+		value  byte
+		want   []byte
 	}{
 		{
 			name:   "push front repeat",
-			slice:  []int{1, 2, 3},
+			slice:  []byte{1, 2, 3},
 			repeat: 2,
 			value:  4,
-			want:   []int{4, 4, 1, 2, 3},
+			want:   []byte{4, 4, 1, 2, 3},
 		},
 		{
 			name:   "push zero front repeat",
-			slice:  []int{1, 2, 3},
+			slice:  []byte{1, 2, 3},
 			repeat: 0,
 			value:  4,
-			want:   []int{1, 2, 3},
+			want:   []byte{1, 2, 3},
 		},
 		{
 			name:   "push front repeat with container",
-			slice:  newContainer(10, []int{1, 2, 3}),
+			slice:  newContainer(10, []byte{1, 2, 3}),
 			repeat: 2,
 			value:  5,
-			want:   []int{5, 5, 1, 2, 3},
+			want:   []byte{5, 5, 1, 2, 3},
 		},
 	}
 
@@ -179,39 +179,39 @@ func TestPushFrontRepeat(t *testing.T) {
 func TestTake(t *testing.T) {
 	tests := []struct {
 		name  string
-		slice []int
+		slice []byte
 		idx   int
-		want  []int
+		want  []byte
 	}{
 		{
 			name:  "take from empty slice",
-			slice: []int{},
+			slice: []byte{},
 			idx:   0,
-			want:  []int{},
+			want:  []byte{},
 		},
 		{
 			name:  "take second from slice",
-			slice: []int{1, 2, 3},
+			slice: []byte{1, 2, 3},
 			idx:   1,
-			want:  []int{1, 3},
+			want:  []byte{1, 3},
 		},
 		{
 			name:  "take last from slice",
-			slice: []int{1, 2, 3},
+			slice: []byte{1, 2, 3},
 			idx:   2,
-			want:  []int{1, 2},
+			want:  []byte{1, 2},
 		},
 		{
 			name:  "take out of range",
-			slice: []int{1, 2, 3},
+			slice: []byte{1, 2, 3},
 			idx:   3,
-			want:  []int{1, 2, 3},
+			want:  []byte{1, 2, 3},
 		},
 		{
 			name:  "take negative index",
-			slice: []int{1, 2, 3},
+			slice: []byte{1, 2, 3},
 			idx:   -1,
-			want:  []int{1, 2, 3},
+			want:  []byte{1, 2, 3},
 		},
 	}
 
@@ -228,25 +228,25 @@ func TestTake(t *testing.T) {
 func TestExtend(t *testing.T) {
 	tests := []struct {
 		name   string
-		slice  []int
+		slice  []byte
 		target int
 		want   int
 	}{
 		{
 			name:   "extend with empty slice",
-			slice:  []int{},
+			slice:  []byte{},
 			target: 10,
 			want:   10,
 		},
 		{
 			name:   "extend with slice",
-			slice:  []int{1, 2, 3},
+			slice:  []byte{1, 2, 3},
 			target: 10,
 			want:   10,
 		},
 		{
 			name:   "extend with slice",
-			slice:  []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
+			slice:  []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0},
 			target: 5,
 			want:   10,
 		},
@@ -265,94 +265,94 @@ func TestExtend(t *testing.T) {
 func TestInsert(t *testing.T) {
 	tests := []struct {
 		name  string
-		slice []int
+		slice []byte
 		idx   int
-		value int
-		want  []int
+		value byte
+		want  []byte
 	}{
 		{
 			name:  "insert into empty slice",
-			slice: []int{},
+			slice: []byte{},
 			idx:   0,
 			value: 1,
-			want:  []int{1},
+			want:  []byte{1},
 		},
 		{
 			name:  "insert into slice",
-			slice: []int{1, 2, 3},
+			slice: []byte{1, 2, 3},
 			idx:   1,
 			value: 4,
-			want:  []int{1, 4, 2, 3},
+			want:  []byte{1, 4, 2, 3},
 		},
 		{
 			name:  "insert first into slice",
-			slice: []int{1, 2, 3},
+			slice: []byte{1, 2, 3},
 			idx:   0,
 			value: 6,
-			want:  []int{6, 1, 2, 3},
+			want:  []byte{6, 1, 2, 3},
 		},
 		{
 			name:  "insert last into slice",
-			slice: []int{1, 2, 3},
+			slice: []byte{1, 2, 3},
 			idx:   3,
 			value: 7,
-			want:  []int{1, 2, 3, 7},
+			want:  []byte{1, 2, 3, 7},
 		},
 		{
 			name:  "insert out of range",
-			slice: []int{1, 2, 3},
+			slice: []byte{1, 2, 3},
 			idx:   4,
 			value: 8,
-			want:  []int{1, 2, 3},
+			want:  []byte{1, 2, 3},
 		},
 		{
 			name:  "insert negative index",
-			slice: []int{1, 2, 3},
+			slice: []byte{1, 2, 3},
 			idx:   -1,
 			value: 9,
-			want:  []int{1, 2, 3},
+			want:  []byte{1, 2, 3},
 		},
 		{
 			name:  "insert into empty slice with container",
-			slice: newContainer(10, []int{}),
+			slice: newContainer(10, []byte{}),
 			idx:   0,
 			value: 1,
-			want:  []int{1},
+			want:  []byte{1},
 		},
 		{
 			name:  "insert into slice with container",
-			slice: newContainer(10, []int{1, 2, 3}),
+			slice: newContainer(10, []byte{1, 2, 3}),
 			idx:   1,
 			value: 4,
-			want:  []int{1, 4, 2, 3},
+			want:  []byte{1, 4, 2, 3},
 		},
 		{
 			name:  "insert first into slice with container",
-			slice: newContainer(10, []int{1, 2, 3}),
+			slice: newContainer(10, []byte{1, 2, 3}),
 			idx:   0,
 			value: 6,
-			want:  []int{6, 1, 2, 3},
+			want:  []byte{6, 1, 2, 3},
 		},
 		{
 			name:  "insert last into slice with container",
-			slice: newContainer(10, []int{1, 2, 3}),
+			slice: newContainer(10, []byte{1, 2, 3}),
 			idx:   3,
 			value: 7,
-			want:  []int{1, 2, 3, 7},
+			want:  []byte{1, 2, 3, 7},
 		},
 		{
 			name:  "insert out of range with container",
-			slice: newContainer(10, []int{1, 2, 3}),
+			slice: newContainer(10, []byte{1, 2, 3}),
 			idx:   4,
 			value: 8,
-			want:  []int{1, 2, 3},
+			want:  []byte{1, 2, 3},
 		},
 		{
 			name:  "insert negative index with container",
-			slice: newContainer(10, []int{1, 2, 3}),
+			slice: newContainer(10, []byte{1, 2, 3}),
 			idx:   -1,
 			value: 9,
-			want:  []int{1, 2, 3},
+			want:  []byte{1, 2, 3},
 		},
 	}
 
@@ -369,51 +369,51 @@ func TestInsert(t *testing.T) {
 func TestRemoveFront(t *testing.T) {
 	tests := []struct {
 		name      string
-		slice     []int
+		slice     []byte
 		count     int
-		want      []int
+		want      []byte
 		remainCap int
 	}{
 		{
 			name:      "remove front from empty slice",
-			slice:     []int{},
+			slice:     []byte{},
 			count:     0,
-			want:      []int{},
+			want:      []byte{},
 			remainCap: 0,
 		},
 		{
 			name:      "remove front from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			count:     1,
-			want:      []int{2, 3},
+			want:      []byte{2, 3},
 			remainCap: 3,
 		},
 		{
 			name:      "remove front from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			count:     2,
-			want:      []int{3},
+			want:      []byte{3},
 			remainCap: 3,
 		},
 		{
 			name:      "remove front from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			count:     3,
-			want:      []int{},
+			want:      []byte{},
 			remainCap: 3,
 		},
 		{
 			name:      "remove front from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			count:     4,
-			want:      []int{},
+			want:      []byte{},
 			remainCap: 3,
 		},
 		{
 			name:      "remove front with negative count",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			count:     -1,
-			want:      []int{1, 2, 3},
+			want:      []byte{1, 2, 3},
 			remainCap: 3,
 		},
 	}
@@ -435,51 +435,51 @@ func TestRemoveFront(t *testing.T) {
 func TestRemoveBack(t *testing.T) {
 	tests := []struct {
 		name      string
-		slice     []int
+		slice     []byte
 		count     int
-		want      []int
+		want      []byte
 		remainCap int
 	}{
 		{
 			name:      "remove back from empty slice",
-			slice:     []int{},
+			slice:     []byte{},
 			count:     0,
-			want:      []int{},
+			want:      []byte{},
 			remainCap: 0,
 		},
 		{
 			name:      "remove back from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			count:     1,
-			want:      []int{1, 2},
+			want:      []byte{1, 2},
 			remainCap: 3,
 		},
 		{
 			name:      "remove back from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			count:     2,
-			want:      []int{1},
+			want:      []byte{1},
 			remainCap: 3,
 		},
 		{
 			name:      "remove back from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			count:     3,
-			want:      []int{},
+			want:      []byte{},
 			remainCap: 3,
 		},
 		{
 			name:      "remove back from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			count:     4,
-			want:      []int{},
+			want:      []byte{},
 			remainCap: 3,
 		},
 		{
 			name:      "remove back with negative count",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			count:     -1,
-			want:      []int{1, 2, 3},
+			want:      []byte{1, 2, 3},
 			remainCap: 3,
 		},
 	}
@@ -497,50 +497,50 @@ func TestRemoveBack(t *testing.T) {
 func TestTrim(t *testing.T) {
 	tests := []struct {
 		name      string
-		slice     []int
+		slice     []byte
 		start     int
 		end       int
-		want      []int
+		want      []byte
 		remainCap int
 	}{
 		{
 			name:      "trim from empty slice",
-			slice:     []int{},
+			slice:     []byte{},
 			start:     0,
 			end:       0,
-			want:      []int{},
+			want:      []byte{},
 			remainCap: 0,
 		},
 		{
 			name:      "trim from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			start:     0,
 			end:       0,
-			want:      []int{},
+			want:      []byte{},
 			remainCap: 3,
 		},
 		{
 			name:      "trim from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			start:     0,
 			end:       2,
-			want:      []int{1, 2},
+			want:      []byte{1, 2},
 			remainCap: 3,
 		},
 		{
 			name:      "trim from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			start:     1,
 			end:       3,
-			want:      []int{2, 3},
+			want:      []byte{2, 3},
 			remainCap: 3,
 		},
 		{
 			name:      "trim from slice",
-			slice:     []int{1, 2, 3},
+			slice:     []byte{1, 2, 3},
 			start:     1,
 			end:       2,
-			want:      []int{2},
+			want:      []byte{2},
 			remainCap: 3,
 		},
 	}
