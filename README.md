@@ -86,62 +86,63 @@ result := d1.Sub(d2).Shift(-5).Add(d1).Truncate(3).String()
 
 Compare to [github.com/shopspring/decimal](https://github.com/shopspring/decimal)
 
-- **Overall Speed**: 1.4-4.2x faster across all operations
-- **Memory Efficiency**: 50-88% reduction in memory allocations
-- **Best Improvements**: Creation (4x faster), Truncate (2.6x faster), Comparisons (2x faster)
-- **Consistent Gains**: Every tested operation shows both speed and memory improvements
+- **Overall Speed**: 1.1-5x faster across all operations
+- **Memory Efficiency**: 50-100% reduction in memory allocations
+- **Best Improvements**: Creation (5x faster), IsNegative (5.3x faster), Comparisons (3-4x faster)
+- **Arithmetic Operations**: Add/Sub operations are 2x faster with significant memory savings
+- **Zero Allocations**: Many operations (creation, comparisons) achieve zero memory allocations
 
 The benchmarks cover core decimal operations including creation, arithmetic (add/sub/mul), transformations (truncate/shift/abs/neg), and comparisons, demonstrating comprehensive performance advantages while maintaining full compatibility.
 
 ```
-BenchmarkNew/ShopSpringDecimal-20                        5979028               206.6 ns/op           200 B/op          7 allocs/op
-BenchmarkNew/Decimal-20                                 21940134               49.45 ns/op            24 B/op          1 allocs/op
+BenchmarkNew/ShopSpringDecimal-20                        5919193               194.1 ns/op           200 B/op          7 allocs/op
+BenchmarkNew/Decimal-20                                 30230674               39.09 ns/op             0 B/op          0 allocs/op
 
-BenchmarkAbs/ShopSpringDecimal-20                        5992156               202.5 ns/op           200 B/op          7 allocs/op
-BenchmarkAbs/Decimal-20                                 12136202               99.75 ns/op            48 B/op          2 allocs/op
+BenchmarkAbs/ShopSpringDecimal-20                        5952031               203.2 ns/op           200 B/op          7 allocs/op
+BenchmarkAbs/Decimal-20                                 14264305               78.57 ns/op            24 B/op          1 allocs/op
 
-BenchmarkNeg/ShopSpringDecimal-20                        4420572               247.6 ns/op           264 B/op          9 allocs/op
-BenchmarkNeg/Decimal-20                                 10095094               120.2 ns/op            72 B/op          3 allocs/op
+BenchmarkNeg/ShopSpringDecimal-20                        4827121               263.6 ns/op           264 B/op          9 allocs/op
+BenchmarkNeg/Decimal-20                                 14046283               86.06 ns/op            24 B/op          1 allocs/op
 
-BenchmarkTruncate/ShopSpringDecimal-20                   2309737               539.2 ns/op           530 B/op         20 allocs/op
-BenchmarkTruncate/Decimal-20                             5044777               205.6 ns/op            96 B/op          4 allocs/op
+BenchmarkTruncate/ShopSpringDecimal-20                   2117624               509.4 ns/op           530 B/op         20 allocs/op
+BenchmarkTruncate/Decimal-20                             7681054               160.9 ns/op            24 B/op          1 allocs/op
 
-BenchmarkShift/ShopSpringDecimal-20                      1893084               600.0 ns/op           608 B/op         22 allocs/op
-BenchmarkShift/Decimal-20                                3309234               382.7 ns/op           224 B/op          8 allocs/op
+BenchmarkShift/ShopSpringDecimal-20                      2029108               609.8 ns/op           608 B/op         22 allocs/op
+BenchmarkShift/Decimal-20                                6765243               176.5 ns/op            40 B/op          2 allocs/op
 
-BenchmarkAdd/ShopSpringDecimal-20                        1498164               754.5 ns/op           728 B/op         28 allocs/op
-BenchmarkAdd/Decimal-20                                  2256195               544.6 ns/op           248 B/op         12 allocs/op
+BenchmarkAdd/ShopSpringDecimal-20                        1579506               714.0 ns/op           728 B/op         28 allocs/op
+BenchmarkAdd/Decimal-20                                  3458757               340.5 ns/op            96 B/op          4 allocs/op
 
-BenchmarkSub/ShopSpringDecimal-20                        1657006               774.5 ns/op           744 B/op         29 allocs/op
-BenchmarkSub/Decimal-20                                  2376349               507.8 ns/op           216 B/op         12 allocs/op
+BenchmarkSub/ShopSpringDecimal-20                        1618722               759.4 ns/op           744 B/op         29 allocs/op
+BenchmarkSub/Decimal-20                                  3815695               326.9 ns/op            80 B/op          4 allocs/op
 
-BenchmarkIsZero/ShopSpringDecimal-20                     5737850               214.5 ns/op           200 B/op          7 allocs/op
-BenchmarkIsZero/Decimal-20                              11718336               108.2 ns/op            48 B/op          2 allocs/op
+BenchmarkIsZero/ShopSpringDecimal-20                     5926252               202.9 ns/op           200 B/op          7 allocs/op
+BenchmarkIsZero/Decimal-20                              17871141               68.91 ns/op             0 B/op          0 allocs/op
 
-BenchmarkIsPositive/ShopSpringDecimal-20                 5634820               231.8 ns/op           200 B/op          7 allocs/op
-BenchmarkIsPositive/Decimal-20                          10650404               102.0 ns/op            48 B/op          2 allocs/op
+BenchmarkIsPositive/ShopSpringDecimal-20                 6099165               207.8 ns/op           200 B/op          7 allocs/op
+BenchmarkIsPositive/Decimal-20                          16562524               69.76 ns/op             0 B/op          0 allocs/op
 
-BenchmarkIsNegative/ShopSpringDecimal-20                 5557935               232.3 ns/op           200 B/op          7 allocs/op
-BenchmarkIsNegative/Decimal-20                          11192362               108.5 ns/op            48 B/op          2 allocs/op
+BenchmarkIsNegative/ShopSpringDecimal-20                 5939834               204.5 ns/op           200 B/op          7 allocs/op
+BenchmarkIsNegative/Decimal-20                          31879681               38.52 ns/op             0 B/op          0 allocs/op
 
-BenchmarkEqual/ShopSpringDecimal-20                      2635482               430.8 ns/op           424 B/op         15 allocs/op
-BenchmarkEqual/Decimal-20                                6604009               189.0 ns/op            80 B/op          4 allocs/op
+BenchmarkEqual/ShopSpringDecimal-20                      2791113               429.3 ns/op           424 B/op         15 allocs/op
+BenchmarkEqual/Decimal-20                               10202091               119.4 ns/op             0 B/op          0 allocs/op
 
-BenchmarkGreater/ShopSpringDecimal-20                    2810475               427.7 ns/op           424 B/op         15 allocs/op
-BenchmarkGreater/Decimal-20                              5347701               197.2 ns/op            80 B/op          4 allocs/op
+BenchmarkGreater/ShopSpringDecimal-20                    2909077               458.0 ns/op           424 B/op         15 allocs/op
+BenchmarkGreater/Decimal-20                              9688188               130.6 ns/op             0 B/op          0 allocs/op
 
-BenchmarkLess/ShopSpringDecimal-20                       2843552               436.8 ns/op           424 B/op         15 allocs/op
-BenchmarkLess/Decimal-20                                 6280638               192.8 ns/op            80 B/op          4 allocs/op
+BenchmarkLess/ShopSpringDecimal-20                       2778007               409.4 ns/op           424 B/op         15 allocs/op
+BenchmarkLess/Decimal-20                                 9694372               127.7 ns/op             0 B/op          0 allocs/op
 
-BenchmarkGreaterOrEqual/ShopSpringDecimal-20             2671776               430.4 ns/op           424 B/op         15 allocs/op
-BenchmarkGreaterOrEqual/Decimal-20                       5619379               193.3 ns/op            80 B/op          4 allocs/op
+BenchmarkGreaterOrEqual/ShopSpringDecimal-20             2877723               426.0 ns/op           424 B/op         15 allocs/op
+BenchmarkGreaterOrEqual/Decimal-20                       9541648               123.0 ns/op             0 B/op          0 allocs/op
 
-BenchmarkLessOrEqual/ShopSpringDecimal-20                2719836               426.5 ns/op           424 B/op         15 allocs/op
-BenchmarkLessOrEqual/Decimal-20                          6183186               214.3 ns/op            80 B/op          4 allocs/op
+BenchmarkLessOrEqual/ShopSpringDecimal-20                2816113               426.4 ns/op           424 B/op         15 allocs/op
+BenchmarkLessOrEqual/Decimal-20                          9752029               125.0 ns/op             0 B/op          0 allocs/op
 
-BenchmarkMul/ShopSpringDecimal-20                        3519614               368.5 ns/op           320 B/op         12 allocs/op
-BenchmarkMul/Decimal-20                                  3416486               329.5 ns/op           136 B/op          5 allocs/op
+BenchmarkMul/ShopSpringDecimal-20                        3358723               338.7 ns/op           320 B/op         12 allocs/op
+BenchmarkMul/Decimal-20                                  3629094               293.6 ns/op            64 B/op          2 allocs/op
 
-BenchmarkDiv/ShopSpringDecimal-20                        2274916               501.5 ns/op           464 B/op         17 allocs/op
-BenchmarkDiv/Decimal-20                                  1628210               790.5 ns/op           704 B/op         25 allocs/op
+BenchmarkDiv/ShopSpringDecimal-20                        2560041               474.7 ns/op           464 B/op         17 allocs/op
+BenchmarkDiv/Decimal-20                                  1795086               700.0 ns/op           352 B/op         12 allocs/op
 ```
