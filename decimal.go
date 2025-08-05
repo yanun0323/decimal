@@ -11,7 +11,6 @@ import (
 var (
 	DivisionPrecision = 16
 	zero              = Decimal("0")
-	one               = Decimal("1")
 )
 
 // Zero return the zero decimal
@@ -93,48 +92,6 @@ func (d Decimal) Truncate(i int) Decimal {
 	return Decimal(truncate(normalize([]byte(d)), i))
 }
 
-func (d Decimal) truncate(i int) Decimal {
-	dotIdx := -1
-	for j := range d {
-		if d[j] == '.' {
-			dotIdx = j
-			break
-		}
-	}
-
-	if i < 0 { // positive
-		i = -i
-		if dotIdx != -1 {
-			d = d[:dotIdx]
-		}
-
-		if i == 0 {
-			return d
-		}
-
-		if i >= len(d) {
-			return zero
-		}
-
-		return Decimal(combineToDecimal(string(d[:len(d)-i]), strings.Repeat("0", i)))
-	}
-
-	// negative
-	if dotIdx == -1 {
-		return d
-	}
-
-	if i == 0 {
-		return d[:dotIdx]
-	}
-
-	p := dotIdx + i + 1
-	if p >= len(d) {
-		return d
-	}
-	return d[:p]
-}
-
 const (
 	_zero        = "0"
 	_zeroDot     = "0."
@@ -156,24 +113,6 @@ func (d Decimal) Shift(sf int) Decimal {
 	return Decimal(shift(normalize([]byte(d)), sf))
 }
 
-func (d Decimal) shift(shift int) Decimal {
-	s := string(d)
-	switch s {
-	case _zero, _zeroDot, _zeroDotZero, _dotZero:
-		return zero
-	}
-
-	if shift == 0 {
-		return d
-	}
-
-	if shift > 0 {
-		return shiftPositive(s, shift)
-	}
-
-	return shiftNegative(s, -shift)
-}
-
 func combineToDecimal(ss ...string) Decimal {
 	builder := strings.Builder{}
 	l := 0
@@ -187,111 +126,6 @@ func combineToDecimal(ss ...string) Decimal {
 	}
 
 	return Decimal(builder.String())
-}
-
-// shiftPositive shifts decimal left. example: 3 to 300
-func shiftPositive(s string, shift int) Decimal {
-	ss := strings.Split(s, ".")
-
-	var isMinus bool
-	if len(ss[0]) != 0 && ss[0][0] == '-' {
-		isMinus = true
-		ss[0] = ss[0][1:]
-	}
-
-	switch len(ss) {
-	case 1:
-		return combineToDecimal(prefix(isMinus), ss[0], strings.Repeat(_zero, shift))
-	case 2:
-		builder := strings.Builder{}
-
-		var (
-			prefixes = ss[0]
-			suffixes = ss[1]
-		)
-		builder.Reset()
-		builder.Grow(len(prefixes) + len(suffixes) + shift + 2)
-		builder.WriteString(prefix(isMinus))
-		builder.WriteString(prefixes)
-		if len(suffixes) > shift {
-			builder.WriteString(suffixes[:shift])
-			builder.WriteByte('.')
-			builder.WriteString(suffixes[shift:])
-			return tidyString(builder.String())
-		} else {
-			// When shift >= len(suffixes), result is an integer
-			builder.WriteString(suffixes)
-			builder.WriteString(strings.Repeat(_zero, shift-len(suffixes)))
-			return tidyString(builder.String())
-		}
-	default:
-		return zero
-	}
-}
-
-// shiftNegative shifts decimal right (division by 10^shift). example: 300 to 3.00
-func shiftNegative(s string, shift int) Decimal {
-	ss := strings.Split(s, ".")
-
-	var isMinus bool
-	if len(ss[0]) != 0 && ss[0][0] == '-' {
-		isMinus = true
-		ss[0] = ss[0][1:]
-	}
-
-	builder := strings.Builder{}
-
-	switch len(ss) {
-	case 1:
-		// Integer case: e.g., "12345" shift 3 -> "12.345"
-		intPart := ss[0]
-		builder.Reset()
-		builder.Grow(len(intPart) + shift + 3)
-		builder.WriteString(prefix(isMinus))
-
-		if len(intPart) <= shift {
-			// e.g., "123" shift 5 -> "0.00123"
-			builder.WriteString("0.")
-			builder.WriteString(strings.Repeat("0", shift-len(intPart)))
-			builder.WriteString(intPart)
-		} else {
-			// e.g., "12345" shift 3 -> "12.345"
-			builder.WriteString(intPart[:len(intPart)-shift])
-			builder.WriteByte('.')
-			builder.WriteString(intPart[len(intPart)-shift:])
-		}
-		return tidyString(builder.String())
-
-	case 2:
-		// Decimal case: e.g., "123.456" shift 2 -> "1.23456"
-		intPart := ss[0]
-		fracPart := ss[1]
-
-		// Combine all digits
-		allDigits := intPart + fracPart
-
-		builder.Reset()
-		builder.Grow(len(allDigits) + shift + 3)
-		builder.WriteString(prefix(isMinus))
-
-		if len(allDigits) <= shift {
-			// e.g., "1.23" shift 5 -> "0.0000123"
-			builder.WriteString("0.")
-			builder.WriteString(strings.Repeat("0", shift-len(allDigits)))
-			builder.WriteString(allDigits)
-		} else {
-			// Insert decimal point from the right
-			// e.g., "10012345678.9" -> "100123456789", shift 8 -> "100.123456789"
-			splitPos := len(allDigits) - shift - 1
-			builder.WriteString(allDigits[:splitPos])
-			builder.WriteByte('.')
-			builder.WriteString(allDigits[splitPos:])
-		}
-		return tidyString(builder.String())
-
-	default:
-		return Zero()
-	}
 }
 
 // Add return d + d2
@@ -473,33 +307,6 @@ func max(a, b int) int {
 	return b
 }
 
-// prefix return '-' when isMinus is true, return "" when isMinus is false
-func prefix(isMinus bool) string {
-	if isMinus {
-		return "-"
-	}
-	return ""
-}
-
-// DecimalPattern is a regex pattern to validate decimal string format
-//
-// Rules:
-// 1. First character can only contain "+-1234567890"
-// 2. Last character can only contain "1234567890"
-// 3. Middle characters can only contain "1234567890."
-// 4. Cannot have consecutive "."
-// var decimalPattern = regexp.MustCompile(`^[+\-0-9]([0-9]*\.?[0-9]*)*[0-9]$|^[+\-]?[0-9]$|^[+\-]?[0-9]*\.[0-9]+$`)
-
-// verify makes sure Decimal is valid for calculation
-func verify(d Decimal) Decimal {
-	dd, err := newDecimal([]byte(d))
-	if err != nil {
-		panic(err)
-	}
-
-	return Decimal(dd)
-}
-
 // IsZero return d == 0
 func (d Decimal) IsZero() bool {
 	if len(d) == 0 {
@@ -509,22 +316,6 @@ func (d Decimal) IsZero() bool {
 	return isZero(normalize([]byte(d)))
 }
 
-func (d Decimal) isZero() bool {
-	if len(d) == 0 {
-		return true
-	}
-
-	for _, c := range d {
-		switch c {
-		case '0', '.':
-			continue
-		default:
-			return false
-		}
-	}
-	return true
-}
-
 // IsPositive return d > 0
 func (d Decimal) IsPositive() bool {
 	buf := normalize([]byte(d))
@@ -532,17 +323,9 @@ func (d Decimal) IsPositive() bool {
 	return !isZero(buf) && !isNegative(buf)
 }
 
-func (d Decimal) isPositive() bool {
-	return isPositive(normalize([]byte(d)))
-}
-
 // IsNegative return d < 0
 func (d Decimal) IsNegative() bool {
 	return isNegative([]byte(d))
-}
-
-func (d Decimal) isNegative() bool {
-	return d[0] == '-'
 }
 
 // Equal return d == d2
