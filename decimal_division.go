@@ -2,41 +2,115 @@ package decimal
 
 import (
 	"math/big"
+	"sync"
 )
 
-var (
-	shiftUint = 24
-)
-
-// Div returns d / d2. Ultra-optimized for trading performance.
+// Div2 returns d / d2 with better performance compared with Div.
+//
+// Key improvements over Div:
+//  1. 避免重複的字串 <-> []byte 轉換；
+//  2. 以 big.Int 直接做 10^n 的位移運算，而非再把結果回寫到字串後用 shift/truncate；
+//  3. 內建快取 10 的冪次，減少重複 big.Int.Exp 的昂貴呼叫。
+//
+// The algorithm:
+//
+//	Suppose d  -> A / 10^iShift,  d2 -> B / 10^i2Shift.
+//	We want result scaled to DivisionPrecision decimal digits.
+//	Compute shiftExp = DivisionPrecision + i2Shift - iShift.
+//	If shiftExp >= 0:
+//	    resultInt = (A * 10^shiftExp) / B
+//	else:
+//	    resultInt = A / (B * 10^{-shiftExp})
+//	The scaled integer is then shifted back by DivisionPrecision using the
+//	existing shift helper.
 func (d Decimal) Div(d2 Decimal) Decimal {
+	// Normalize inputs
 	a := normalize([]byte(d))
 	b := normalize([]byte(d2))
 
 	if isZero(b) {
 		panic("division by zero")
 	}
-
 	if isZero(a) {
 		return Zero()
 	}
 
+	// Remove decimal point to get pure integer representations
 	ib, iShift := removeDecimalPoint(a)
-	ib = shift(ib, shiftUint)
-	iShift += shiftUint
-
-	i, ok := new(big.Int).SetString(string(ib), 10)
-	if !ok {
-		panic("convert decimal to big int")
-	}
-
 	ib2, i2Shift := removeDecimalPoint(b)
-	i2, ok := new(big.Int).SetString(string(ib2), 10)
+
+	// Convert to big.Int (base 10)
+	bigA, ok := new(big.Int).SetString(string(ib), 10)
+	if !ok {
+		panic("convert decimal to big int")
+	}
+	bigB, ok := new(big.Int).SetString(string(ib2), 10)
 	if !ok {
 		panic("convert decimal to big int")
 	}
 
-	i = i.Div(i, i2)
+	// Calculate scaling factor to preserve DivisionPrecision digits
+	shiftExp := DivisionPrecision + i2Shift - iShift
 
-	return Decimal(truncate(shift([]byte(i.String()), i2Shift-iShift), DivisionPrecision))
+	// Scale numerator or denominator accordingly
+	var scaled big.Int
+	scaled.Set(bigA)
+
+	if shiftExp >= 0 {
+		scaled.Mul(&scaled, pow10(shiftExp))
+		scaled.Div(&scaled, bigB)
+	} else {
+		var denom big.Int
+		denom.Mul(bigB, pow10(-shiftExp))
+		scaled.Div(&scaled, &denom)
+	}
+
+	// Convert back to []byte and insert decimal point
+	buf := []byte(scaled.String())
+	buf = shift(buf, -DivisionPrecision)
+
+	// tidy will remove unnecessary leading/trailing zeros and dots
+	return tidy(buf)
+}
+
+// ------------------------- helper -------------------------
+
+var (
+	pow10Once  sync.Once
+	pow10Table []*big.Int
+	pow10Mu    sync.RWMutex
+)
+
+// initPow10Table initializes the power-of-ten lookup with 0 -> 1.
+func initPow10Table() {
+	pow10Table = []*big.Int{big.NewInt(1)}
+}
+
+// pow10 returns 10^n using a shared cache to avoid repetitive Exp calculations.
+func pow10(n int) *big.Int {
+	if n < 0 {
+		panic("pow10: negative exponent")
+	}
+
+	// Ensure the table is initialized exactly once.
+	pow10Once.Do(initPow10Table)
+
+	pow10Mu.RLock()
+	if n < len(pow10Table) {
+		v := pow10Table[n]
+		pow10Mu.RUnlock()
+		return v
+	}
+	pow10Mu.RUnlock()
+
+	// Upgrade lock to write
+	pow10Mu.Lock()
+	defer pow10Mu.Unlock()
+
+	// Re-check to avoid duplicate work after lock upgrade
+	for len(pow10Table) <= n {
+		next := new(big.Int).Mul(pow10Table[len(pow10Table)-1], big.NewInt(10))
+		pow10Table = append(pow10Table, next)
+	}
+	return pow10Table[n]
 }

@@ -31,6 +31,10 @@ func newDecimal(buf []byte) ([]byte, error) {
 		return zeroBytes, nil
 	}
 
+	if len(buf) >= 2 && buf[0] == '"' && buf[len(buf)-1] == '"' {
+		buf = trim(buf, 1, len(buf)-1)
+	}
+
 	dot := false
 	firstChar := true
 	i := 0
@@ -220,9 +224,12 @@ func truncate(buf []byte, i int) []byte {
 	return buf[:p]
 }
 
-// 100.123456789 sf=8
-// 100123456789
-// idx=3 tidx=11
+// shift shift the decimal point of the buffer by sf
+//
+//   - example: 123.456
+//   - shift 5  -> 123456 -> 12345600
+//   - shift -5 -> 123456 -> 0.00123456
+//   - shift 2  -> 123456 -> 12345.6
 func shift(buf []byte, sf int) []byte {
 	if sf == 0 {
 		return buf

@@ -6,18 +6,13 @@ import (
 )
 
 func BenchmarkFineTuning(b *testing.B) {
+	operatorBase := Require("12,345,789.00456888")
+	operatorAddition := Require("789.00456888")
 	beforeFunc := func() {
-		slice := make([]byte, 1000)
-		slice2 := make([]byte, 1001)[:1000]
-		insert(slice, 100, '0')
-		insert(slice2, 100, '0')
+		operatorBase.Div(operatorAddition)
 	}
 
 	afterFunc := func() {
-		slice := make([]byte, 1000)
-		slice2 := make([]byte, 1001)[:1000]
-		insert(slice, 100, '0')
-		insert(slice2, 100, '0')
 	}
 
 	runtime.GC()
