@@ -1,22 +1,60 @@
 package decimal
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"slices"
 )
 
 var (
 	zeroBytes = []byte{'0'}
 )
 
+// quickCheckZero returns true when the given byte slice represents a
+// variety of textual zero values ("0", "00", "+0", "-0", ".0", "0." …).
+//
+// 與先前實作相比，避免了 `string(buf)` 造成的記憶體配置與一次性複製，
+// 直接以長度與索引檢查，大幅降低熱路徑上的 GC 壓力與 CPU 週期。
 func quickCheckZero(buf []byte) bool {
-	switch string(buf) {
-	case "",
-		"0", ".",
-		"0.", ".0", "+0", "-0", "00",
-		"000", "0.0", ".00", "00.", "+00", "+0.", "-00", "-0.":
-		return true
+	switch len(buf) {
+	case 0:
+		return true // ""
+	case 1:
+		return buf[0] == '0' || buf[0] == '.'
+	case 2:
+		b0, b1 := buf[0], buf[1]
+		if b0 == '0' && b1 == '0' { // "00"
+			return true
+		}
+		if (b0 == '0' && b1 == '.') || (b0 == '.' && b1 == '0') { // "0." or ".0"
+			return true
+		}
+		if (b0 == '+' || b0 == '-') && b1 == '0' { // "+0" or "-0"
+			return true
+		}
+		return false
+	case 3:
+		b0, b1, b2 := buf[0], buf[1], buf[2]
+
+		// "000"
+		if b0 == '0' && b1 == '0' && b2 == '0' {
+			return true
+		}
+
+		// ".00" or "00." or "0.0"
+		if (b0 == '.' && b1 == '0' && b2 == '0') ||
+			(b0 == '0' && b1 == '0' && b2 == '.') ||
+			(b0 == '0' && b1 == '.' && b2 == '0') {
+			return true
+		}
+
+		// "+00", "-00", "+0.", "-0."
+		if b0 == '+' || b0 == '-' {
+			if b1 == '0' && (b2 == '0' || b2 == '.') {
+				return true
+			}
+		}
+		return false
 	default:
 		return false
 	}
@@ -91,7 +129,7 @@ func tidyBytes(num []byte) []byte {
 		return zeroBytes
 	}
 
-	hasDot := slices.Contains(num, '.')
+	hasDot := bytes.IndexByte(num, '.') != -1
 
 	// Handle sign prefix
 	var sign bool
@@ -165,13 +203,28 @@ func tidyBytes(num []byte) []byte {
 }
 
 func findDotIndex(buf []byte) int {
-	for j := range buf {
-		if buf[j] == '.' {
-			return j
-		}
+	return bytes.IndexByte(buf, '.')
+}
+
+// sign returns 1 if buf represents a positive number, 0 if zero, -1 if negative.
+// 以單趟掃描完成零值與符號判定，後續比較可重複利用結果而不必再次遍歷。
+func sign(buf []byte) int8 {
+	neg := false
+	if len(buf) > 0 && buf[0] == '-' {
+		neg = true
+		buf = buf[1:]
 	}
 
-	return -1
+	for _, c := range buf {
+		if c == '0' || c == '.' {
+			continue
+		}
+		if neg {
+			return -1
+		}
+		return 1
+	}
+	return 0
 }
 
 func normalize(buf []byte) []byte {
@@ -199,13 +252,7 @@ func truncate(buf []byte, i int) []byte {
 		if i >= len(buf) {
 			return zeroBytes
 		}
-
-		{ // fill zeros to the right
-			for j := 1; j <= i; j++ {
-				buf[len(buf)-j] = '0'
-			}
-			return buf
-		}
+		return pushBackRepeat(buf[:len(buf)-1], '0', i)
 	}
 
 	// negative
@@ -494,15 +541,17 @@ func isPositive(buf []byte) bool {
 //	**12.1****
 //	^ // <- pointer go backward
 func greater(a, b []byte) bool {
-	if isPositive(a) && isNegative(b) {
-		return true
+	sA, sB := sign(a), sign(b)
+	if sA != sB {
+		return sA > sB
 	}
 
-	if isNegative(b) && isPositive(a) {
+	if sA == 0 { // both zero
 		return false
 	}
 
-	if a[0] == '-' {
+	// strip leading '-'
+	if sA == -1 {
 		a = trimFront(a, 1)
 		b = trimFront(b, 1)
 	}
@@ -522,7 +571,11 @@ func greater(a, b []byte) bool {
 	maxLenAfterDotIdx := max(len(a)-aDotIdx-1, len(b)-bDotIdx-1)
 
 	if aDotIdx != bDotIdx {
-		return aDotIdx > bDotIdx
+		cmp := aDotIdx > bDotIdx
+		if sA == -1 { // for negative numbers invert result
+			return !cmp
+		}
+		return cmp
 	}
 
 	count := aDotIdx + maxLenAfterDotIdx + 1
@@ -540,7 +593,11 @@ func greater(a, b []byte) bool {
 		}
 
 		if a[i] != b[i] {
-			return a[i] > b[i]
+			cmp := a[i] > b[i]
+			if sA == -1 {
+				return !cmp
+			}
+			return cmp
 		}
 	}
 
@@ -558,15 +615,16 @@ func greater(a, b []byte) bool {
 //	**12.1****
 //	^ // <- pointer go backward
 func less(a, b []byte) bool {
-	if isNegative(a) && isPositive(b) {
-		return true
+	sA, sB := sign(a), sign(b)
+	if sA != sB {
+		return sA < sB
 	}
 
-	if isPositive(a) && isNegative(b) {
+	if sA == 0 {
 		return false
 	}
 
-	if a[0] == '-' {
+	if sA == -1 {
 		a = trimFront(a, 1)
 		b = trimFront(b, 1)
 	}
@@ -586,7 +644,11 @@ func less(a, b []byte) bool {
 	maxLenAfterDotIdx := max(len(a)-aDotIdx-1, len(b)-bDotIdx-1)
 
 	if aDotIdx != bDotIdx {
-		return aDotIdx < bDotIdx
+		cmp := aDotIdx < bDotIdx
+		if sA == -1 {
+			return !cmp
+		}
+		return cmp
 	}
 
 	count := aDotIdx + maxLenAfterDotIdx + 1
@@ -604,7 +666,11 @@ func less(a, b []byte) bool {
 		}
 
 		if a[i] != b[i] {
-			return a[i] < b[i]
+			cmp := a[i] < b[i]
+			if sA == -1 {
+				return !cmp
+			}
+			return cmp
 		}
 	}
 
