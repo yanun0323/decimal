@@ -69,8 +69,7 @@ func pushFront(slice []byte, values ...byte) []byte {
 }
 
 func pushBack(slice []byte, values ...byte) []byte {
-	extend(slice, len(slice)+len(values))
-	return append(slice, values...)
+	return append(extend(slice, len(slice)+len(values)), values...)
 }
 
 // remove removes the element at the given index and returns the slice without the element.
