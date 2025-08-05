@@ -102,7 +102,6 @@ func insert(slice []byte, idx int, value byte) []byte {
 
 	if len(slice) < cap(slice) { // slice is not filled
 		slice = append(slice, value)
-		copy(slice, slice[:idx])
 		copy(slice[idx+1:], slice[idx:])
 		slice[idx] = value
 		return slice
