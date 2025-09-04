@@ -50,6 +50,57 @@ func BenchmarkNew(b *testing.B) {
 	)
 }
 
+func BenchmarkNewFromFloat(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				dd := decimal.NewFromFloat(123456789.00456888)
+				_ = dd
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				dd := NewFromFloat(123456789.00456888)
+				_ = dd
+			}
+		},
+	)
+}
+
+func BenchmarkNewFromInt(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				dd := decimal.NewFromInt(123456789)
+				_ = dd
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				dd := NewFromInt(123456789)
+				_ = dd
+			}
+		},
+	)
+}
+
+func BenchmarkStringFixed(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				_ = d1.StringFixed(2)
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				_ = d1.StringFixed(2)
+			}
+		},
+	)
+}
+
 func BenchmarkAbs(b *testing.B) {
 	Run(b,
 		func(b *testing.B) {
@@ -103,6 +154,131 @@ func BenchmarkTruncate(b *testing.B) {
 				_ = s
 				d2, _ := New(_operatorBase)
 				s2 := d2.Truncate(-8)
+				_ = s2
+			}
+		},
+	)
+}
+
+func BenchmarkCeil(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := decimal.NewFromString(_operatorBase)
+				s := d.RoundCeil(8).String()
+				_ = s
+				d2, _ := decimal.NewFromString(_operatorBase)
+				s2 := d2.RoundCeil(-8).String()
+				_ = s2
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := New(_operatorBase)
+				s := d.Ceil(8)
+				_ = s
+				d2, _ := New(_operatorBase)
+				s2 := d2.Ceil(-8)
+				_ = s2
+			}
+		},
+	)
+}
+
+func BenchmarkRound(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := decimal.NewFromString(_operatorBase)
+				s := d.Round(8).String()
+				_ = s
+				d2, _ := decimal.NewFromString(_operatorBase)
+				s2 := d2.Round(-8).String()
+				_ = s2
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := New(_operatorBase)
+				s := d.Round(8)
+				_ = s
+				d2, _ := New(_operatorBase)
+				s2 := d2.Round(-8)
+				_ = s2
+			}
+		},
+	)
+}
+
+func BenchmarkRoundAwayFromZero(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := decimal.NewFromString(_operatorBase)
+				s := d.RoundUp(8).String()
+				_ = s
+				d2, _ := decimal.NewFromString(_operatorBase)
+				s2 := d2.RoundUp(-8).String()
+				_ = s2
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := New(_operatorBase)
+				s := d.RoundAwayFromZero(8)
+				_ = s
+				d2, _ := New(_operatorBase)
+				s2 := d2.RoundAwayFromZero(-8)
+				_ = s2
+			}
+		},
+	)
+}
+
+func BenchmarkRoundTowardToZero(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := decimal.NewFromString(_operatorBase)
+				s := d.RoundDown(8).String()
+				_ = s
+				d2, _ := decimal.NewFromString(_operatorBase)
+				s2 := d2.RoundDown(-8).String()
+				_ = s2
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := New(_operatorBase)
+				s := d.RoundTowardToZero(8)
+				_ = s
+				d2, _ := New(_operatorBase)
+				s2 := d2.RoundTowardToZero(-8)
+				_ = s2
+			}
+		},
+	)
+}
+
+func BenchmarkFloor(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := decimal.NewFromString(_operatorBase)
+				s := d.RoundFloor(8).String()
+				_ = s
+				d2, _ := decimal.NewFromString(_operatorBase)
+				s2 := d2.RoundFloor(-8).String()
+				_ = s2
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d, _ := New(_operatorBase)
+				s := d.Floor(8)
+				_ = s
+				d2, _ := New(_operatorBase)
+				s2 := d2.Floor(-8)
 				_ = s2
 			}
 		},
@@ -319,6 +495,25 @@ func BenchmarkLessOrEqual(b *testing.B) {
 				d1, _ := New(_operatorBase)
 				d2, _ := New(_operatorAddition)
 				_ = d1.LessOrEqual(d2)
+			}
+		},
+	)
+}
+
+func BenchmarkSign(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				s := d1.Sign()
+				_ = s + 2
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				s := d1.Sign()
+				_ = s + 2
 			}
 		},
 	)

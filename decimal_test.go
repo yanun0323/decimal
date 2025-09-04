@@ -2,40 +2,19 @@ package decimal
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 
-	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
-type DecimalSuite struct {
-	suite.Suite
-}
-
-func TestDecimalSuite(t *testing.T) {
+func TestDecimal(t *testing.T) {
 	suite.Run(t, new(DecimalSuite))
 }
 
-func (su *DecimalSuite) SetupSuite() {}
-
-func (su *DecimalSuite) TestPressure() {
-	d := decimal.RequireFromString("123.123").Truncate(5)
-	su.Equal("123.123", d.String())
-
-	b := strings.Repeat("2", 100_000_000)
-	a := strings.Repeat("1", 100_000_000)
-
-	bd, err := New(b)
-	su.Require().NoError(err)
-	ad, err := New(a)
-	su.Require().NoError(err)
-
-	res := bd.Sub(ad)
-	su.Require().NoError(err)
-	su.Equal(a, res.String())
+type DecimalSuite struct {
+	suite.Suite
 }
 
 func (su *DecimalSuite) TestNewDecimal() {
@@ -49,6 +28,16 @@ func (su *DecimalSuite) TestNewDecimal() {
 			desc:     "Good Without Dropping",
 			input:    "-100,000.000,000",
 			expected: "-100000",
+		},
+		{
+			desc:     "Good With Dropping",
+			input:    "+1_000_000_000",
+			expected: "1000000000",
+		},
+		{
+			desc:     "Good With Dropping",
+			input:    "+1_000.000_000",
+			expected: "1000",
 		},
 		{
 			desc:     "Good With Dropping",
@@ -71,29 +60,34 @@ func (su *DecimalSuite) TestNewDecimal() {
 			expected: "0",
 		},
 		{
-			desc:     "Empty String",
+			desc:     "Zero",
 			input:    "0",
 			expected: "0",
 		},
 		{
-			desc:     "Dot String",
+			desc:     "Dot",
 			input:    ".",
 			expected: "0",
 		},
 		{
-			desc:     "Dot Zero String",
+			desc:     "Dot Zero",
 			input:    ".0",
 			expected: "0",
 		},
 		{
-			desc:     "Zero Dot Zero String",
+			desc:     "Zero Dot Zero",
 			input:    "0.0",
 			expected: "0",
 		},
 		{
-			desc:     "Zero Dot String",
+			desc:     "Zero Dot",
 			input:    "0.",
 			expected: "0",
+		},
+		{
+			desc:     "Zero Dot Dot Zero",
+			input:    "0..0",
+			hasError: true,
 		},
 		{
 			desc:     "Empty String After Dropping",
@@ -112,16 +106,118 @@ func (su *DecimalSuite) TestNewDecimal() {
 			t.Log(tc.desc)
 			d, err := New(tc.input)
 			if tc.hasError {
-				su.Require().Error(err)
+				su.Require().Error(err, "[%s] input: %s, expected: %s, err: %s", tc.desc, tc.input, tc.expected, err)
 				return
 			}
 
-			su.Require().NoError(err, tc.desc)
-			su.Equal(tc.expected, d.String(), tc.desc)
+			su.Require().NoError(err, "[%s] input: %s, expected: %s, no error", tc.desc, tc.input, tc.expected)
+			su.Equal(tc.expected, d.String(), "[%s] input: %s, expected: %s, got: %s", tc.desc, tc.input, tc.expected, d.String())
 		})
 	}
 }
 
+func (su *DecimalSuite) TestStringFixed() {
+	testCases := []struct {
+		desc     string
+		input    string
+		prec     int
+		expected string
+	}{
+		{
+			desc:     "Normal",
+			input:    "123.456",
+			prec:     2,
+			expected: "123.45",
+		},
+		{
+			desc:     "Positive Overflow Precision",
+			input:    "123.456",
+			prec:     5,
+			expected: "123.45600",
+		},
+		{
+			desc:     "Positive Overflow Precision",
+			input:    "123.456",
+			prec:     10,
+			expected: "123.4560000000",
+		},
+		{
+			desc:     "Zero Precision",
+			input:    "123.456",
+			prec:     0,
+			expected: "123",
+		},
+		{
+			desc:     "Negative Precision",
+			input:    "123.456",
+			prec:     -1,
+			expected: "120",
+		},
+		{
+			desc:     "Negative Overflow Precision",
+			input:    "123.456",
+			prec:     -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Precision",
+			input:    "123.456",
+			prec:     -10,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Decimal With Normal",
+			input:    "-123.456",
+			prec:     2,
+			expected: "-123.45",
+		},
+		{
+			desc:     "Negative Decimal With Positive Overflow Precision",
+			input:    "-123.456",
+			prec:     5,
+			expected: "-123.45600",
+		},
+		{
+			desc:     "Negative Decimal With Positive Overflow Precision",
+			input:    "-123.456",
+			prec:     10,
+			expected: "-123.4560000000",
+		},
+		{
+			desc:     "Negative Decimal With Zero Precision",
+			input:    "-123.456",
+			prec:     0,
+			expected: "-123",
+		},
+		{
+			desc:     "Negative Decimal With Negative Precision",
+			input:    "-123.456",
+			prec:     -1,
+			expected: "-120",
+		},
+		{
+			desc:     "Negative Decimal With Negative Overflow Precision",
+			input:    "-123.456",
+			prec:     -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Decimal With Negative Overflow Precision",
+			input:    "-123.456",
+			prec:     -10,
+			expected: "0",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			d, err := New(tc.input)
+			su.Require().NoError(err, "[%s] input: %s, prec: %d, expected: %s, err: %s", tc.desc, tc.input, tc.prec, tc.expected, err)
+			su.Equal(tc.expected, d.StringFixed(tc.prec), "[%s] input: %s, prec: %d, expected: %s, got: %s", tc.desc, tc.input, tc.prec, tc.expected, d.StringFixed(tc.prec))
+		})
+	}
+}
 func (su *DecimalSuite) TestZeroValue() {
 	var d Decimal
 	d2, err := New("123")
@@ -225,6 +321,12 @@ func (su *DecimalSuite) TestTruncate() {
 		},
 		{
 			desc:     "Normal",
+			input:    "120.000",
+			truncate: 0,
+			expected: "120",
+		},
+		{
+			desc:     "Normal",
 			input:    "123.123",
 			truncate: 1,
 			expected: "123.1",
@@ -233,6 +335,12 @@ func (su *DecimalSuite) TestTruncate() {
 			desc:     "No Need Truncate",
 			input:    "123.123",
 			truncate: 5,
+			expected: "123.123",
+		},
+		{
+			desc:     "No Need Truncate",
+			input:    "123.123",
+			truncate: 10,
 			expected: "123.123",
 		},
 		{
@@ -245,6 +353,12 @@ func (su *DecimalSuite) TestTruncate() {
 			desc:     "Negative Overflow Truncate",
 			input:    "123.123",
 			truncate: -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Truncate",
+			input:    "123.123",
+			truncate: -10,
 			expected: "0",
 		},
 		{
@@ -265,6 +379,79 @@ func (su *DecimalSuite) TestTruncate() {
 			truncate: 2,
 			expected: "0",
 		},
+
+		{
+			desc:     "Negative With Normal",
+			input:    "-123.123",
+			truncate: 0,
+			expected: "-123",
+		},
+		{
+			desc:     "Negative With Normal",
+			input:    "-123",
+			truncate: 0,
+			expected: "-123",
+		},
+		{
+			desc:     "Negative With Normal",
+			input:    "-123.000",
+			truncate: 0,
+			expected: "-123",
+		},
+		{
+			desc:     "Negative With Normal",
+			input:    "-120.000",
+			truncate: 0,
+			expected: "-120",
+		},
+		{
+			desc:     "Negative With Normal",
+			input:    "-123.123",
+			truncate: 1,
+			expected: "-123.1",
+		},
+		{
+			desc:     "Negative With No Need Truncate",
+			input:    "-123.123",
+			truncate: 5,
+			expected: "-123.123",
+		},
+		{
+			desc:     "Negative With No Need Truncate",
+			input:    "-123.123",
+			truncate: 10,
+			expected: "-123.123",
+		},
+		{
+			desc:     "Negative With Negative Truncate",
+			input:    "-123.123",
+			truncate: -1,
+			expected: "-120",
+		},
+		{
+			desc:     "Negative With Negative Overflow Truncate",
+			input:    "-123.123",
+			truncate: -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative With Negative Overflow Truncate",
+			input:    "-123.123",
+			truncate: -10,
+			expected: "0",
+		},
+		{
+			desc:     "Negative With Natural Number",
+			input:    "-123",
+			truncate: 3,
+			expected: "-123",
+		},
+		{
+			desc:     "Negative With Zero Decimal",
+			input:    "-123.000",
+			truncate: 2,
+			expected: "-123",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -273,43 +460,6 @@ func (su *DecimalSuite) TestTruncate() {
 			d, err := New(tc.input)
 			su.Require().NoError(err, tc.desc)
 			su.Equal(tc.expected, d.Truncate(tc.truncate).String(), tc.desc)
-		})
-	}
-}
-
-func (su *DecimalSuite) TestFindOrInsertDecimalPoint() {
-	testCases := []struct {
-		desc          string
-		input         string
-		expectedNum   string
-		expectedIndex int
-	}{
-		{
-			desc:          "A",
-			input:         "123.456",
-			expectedNum:   "123.456",
-			expectedIndex: 3,
-		},
-		{
-			desc:          "B",
-			input:         "123123",
-			expectedNum:   "123123.",
-			expectedIndex: 6,
-		},
-		{
-			desc:          "C",
-			input:         ".123",
-			expectedNum:   ".123",
-			expectedIndex: 0,
-		},
-	}
-
-	for _, tc := range testCases {
-		su.T().Run(tc.desc, func(t *testing.T) {
-			t.Log(tc.desc)
-			result, index := findOrInsertDecimalPoint([]byte(tc.input))
-			su.Equal(tc.expectedNum, string(result), tc.desc)
-			su.Equal(tc.expectedIndex, index, tc.desc)
 		})
 	}
 }
@@ -428,7 +578,7 @@ func (su *DecimalSuite) TestUnsignedSub() {
 	}
 }
 
-func (su *DecimalSuite) TestCleanZero() {
+func (su *DecimalSuite) TestTidy() {
 	testCases := []struct {
 		desc     string
 		input    string
@@ -872,6 +1022,14 @@ func (su *DecimalSuite) TestIsZero() {
 			d:        "123",
 			expected: false,
 		},
+		{
+			d:        "-123",
+			expected: false,
+		},
+		{
+			d:        "-0",
+			expected: true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -889,19 +1047,23 @@ func (su *DecimalSuite) TestIsPositive() {
 		expected bool
 	}{
 		{
+			d:        "123",
+			expected: true,
+		},
+		{
+			d:        "-123",
+			expected: false,
+		},
+		{
 			d:        "123456.88",
 			expected: true,
 		},
 		{
-			d:        "0",
+			d:        "-123456.88",
 			expected: false,
 		},
 		{
 			d:        "0",
-			expected: false,
-		},
-		{
-			d:        "-1",
 			expected: false,
 		},
 	}
@@ -921,15 +1083,23 @@ func (su *DecimalSuite) TestIsNegative() {
 		expected bool
 	}{
 		{
+			d:        "-123",
+			expected: true,
+		},
+		{
+			d:        "123",
+			expected: false,
+		},
+		{
 			d:        "-123456.88",
 			expected: true,
 		},
 		{
-			d:        "0",
+			d:        "123456.88",
 			expected: false,
 		},
 		{
-			d:        "1",
+			d:        "0",
 			expected: false,
 		},
 	}
@@ -948,12 +1118,32 @@ func (su *DecimalSuite) TestEqual() {
 		d1, d2 Decimal
 	}{
 		{
+			d1: "123",
+			d2: "123",
+		},
+		{
+			d1: "-123",
+			d2: "-123",
+		},
+		{
 			d1: "123456.88",
 			d2: "123456.88",
 		},
 		{
+			d1: "-123456.88",
+			d2: "-123456.88",
+		},
+		{
 			d1: "0",
 			d2: "0",
+		},
+		{
+			d1: "-0",
+			d2: "0",
+		},
+		{
+			d1: "0",
+			d2: "-0",
 		},
 	}
 
@@ -972,13 +1162,83 @@ func (su *DecimalSuite) TestGreater() {
 		expected bool
 	}{
 		{
-			d1:       "123456.89",
-			d2:       "123456.88",
+			d1:       "123456",
+			d2:       "123455",
+			expected: true,
+		},
+		{
+			d1:       "123456",
+			d2:       "123456",
+			expected: false,
+		},
+		{
+			d1:       "123456",
+			d2:       "123457",
+			expected: false,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123455",
+			expected: false,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123456",
+			expected: false,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123457",
+			expected: true,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.455",
+			expected: true,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.456",
+			expected: false,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.457",
+			expected: false,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.455",
+			expected: false,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.456",
+			expected: false,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.457",
 			expected: true,
 		},
 		{
 			d1:       "123456.89",
 			d2:       "12345.888899",
+			expected: true,
+		},
+		{
+			d1:       "12345.888899",
+			d2:       "123456.89",
+			expected: false,
+		},
+		{
+			d1:       "-123456.89",
+			d2:       "-12345.888899",
+			expected: false,
+		},
+		{
+			d1:       "-12345.888899",
+			d2:       "-123456.89",
 			expected: true,
 		},
 		{
@@ -994,11 +1254,6 @@ func (su *DecimalSuite) TestGreater() {
 		{
 			d1:       "0",
 			d2:       "0",
-			expected: false,
-		},
-		{
-			d1:       "12345.888899",
-			d2:       "123456.89",
 			expected: false,
 		},
 	}
@@ -1018,9 +1273,69 @@ func (su *DecimalSuite) TestLess() {
 		expected bool
 	}{
 		{
-			d1:       "123456.88",
-			d2:       "123456.89",
+			d1:       "123456",
+			d2:       "123455",
+			expected: false,
+		},
+		{
+			d1:       "123456",
+			d2:       "123456",
+			expected: false,
+		},
+		{
+			d1:       "123456",
+			d2:       "123457",
 			expected: true,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123455",
+			expected: true,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123456",
+			expected: false,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123457",
+			expected: false,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.455",
+			expected: false,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.456",
+			expected: false,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.457",
+			expected: true,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.455",
+			expected: true,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.456",
+			expected: false,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.457",
+			expected: false,
+		},
+		{
+			d1:       "123456.89",
+			d2:       "12345.888899",
+			expected: false,
 		},
 		{
 			d1:       "12345.888899",
@@ -1028,9 +1343,19 @@ func (su *DecimalSuite) TestLess() {
 			expected: true,
 		},
 		{
-			d1:       "0",
-			d2:       "0.00001",
+			d1:       "-123456.89",
+			d2:       "-12345.888899",
 			expected: true,
+		},
+		{
+			d1:       "-12345.888899",
+			d2:       "-123456.89",
+			expected: false,
+		},
+		{
+			d1:       "0.00001",
+			d2:       "0",
+			expected: false,
 		},
 		{
 			d1:       "0.00001",
@@ -1040,11 +1365,6 @@ func (su *DecimalSuite) TestLess() {
 		{
 			d1:       "0",
 			d2:       "0",
-			expected: false,
-		},
-		{
-			d1:       "123456.89",
-			d2:       "12345.888899",
 			expected: false,
 		},
 	}
@@ -1064,13 +1384,83 @@ func (su *DecimalSuite) TestGreaterOrEqual() {
 		expected bool
 	}{
 		{
-			d1:       "123456.89",
-			d2:       "123456.88",
+			d1:       "123456",
+			d2:       "123455",
+			expected: true,
+		},
+		{
+			d1:       "123456",
+			d2:       "123456",
+			expected: true,
+		},
+		{
+			d1:       "123456",
+			d2:       "123457",
+			expected: false,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123455",
+			expected: false,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123456",
+			expected: true,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123457",
+			expected: true,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.455",
+			expected: true,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.456",
+			expected: true,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.457",
+			expected: false,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.455",
+			expected: false,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.456",
+			expected: true,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.457",
 			expected: true,
 		},
 		{
 			d1:       "123456.89",
 			d2:       "12345.888899",
+			expected: true,
+		},
+		{
+			d1:       "12345.888899",
+			d2:       "123456.89",
+			expected: false,
+		},
+		{
+			d1:       "-123456.89",
+			d2:       "-12345.888899",
+			expected: false,
+		},
+		{
+			d1:       "-12345.888899",
+			d2:       "-123456.89",
 			expected: true,
 		},
 		{
@@ -1087,11 +1477,6 @@ func (su *DecimalSuite) TestGreaterOrEqual() {
 			d1:       "0",
 			d2:       "0",
 			expected: true,
-		},
-		{
-			d1:       "12345.888899",
-			d2:       "123456.89",
-			expected: false,
 		},
 	}
 
@@ -1110,9 +1495,69 @@ func (su *DecimalSuite) TestLessOrEqual() {
 		expected bool
 	}{
 		{
-			d1:       "123456.88",
-			d2:       "123456.89",
+			d1:       "123456",
+			d2:       "123455",
+			expected: false,
+		},
+		{
+			d1:       "123456",
+			d2:       "123456",
 			expected: true,
+		},
+		{
+			d1:       "123456",
+			d2:       "123457",
+			expected: true,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123455",
+			expected: true,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123456",
+			expected: true,
+		},
+		{
+			d1:       "-123456",
+			d2:       "-123457",
+			expected: false,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.455",
+			expected: false,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.456",
+			expected: true,
+		},
+		{
+			d1:       "123.456",
+			d2:       "123.457",
+			expected: true,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.455",
+			expected: true,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.456",
+			expected: true,
+		},
+		{
+			d1:       "-123.456",
+			d2:       "-123.457",
+			expected: false,
+		},
+		{
+			d1:       "123456.89",
+			d2:       "12345.888899",
+			expected: false,
 		},
 		{
 			d1:       "12345.888899",
@@ -1120,9 +1565,19 @@ func (su *DecimalSuite) TestLessOrEqual() {
 			expected: true,
 		},
 		{
-			d1:       "0",
-			d2:       "0.00001",
+			d1:       "-123456.89",
+			d2:       "-12345.888899",
 			expected: true,
+		},
+		{
+			d1:       "-12345.888899",
+			d2:       "-123456.89",
+			expected: false,
+		},
+		{
+			d1:       "0.00001",
+			d2:       "0",
+			expected: false,
 		},
 		{
 			d1:       "0.00001",
@@ -1133,11 +1588,6 @@ func (su *DecimalSuite) TestLessOrEqual() {
 			d1:       "0",
 			d2:       "0",
 			expected: true,
-		},
-		{
-			d1:       "123456.89",
-			d2:       "12345.888899",
-			expected: false,
 		},
 	}
 
@@ -1158,9 +1608,21 @@ func (su *DecimalSuite) TestMultiplyPureNumber() {
 }
 
 func (su *DecimalSuite) TestRemoveDecimalPoint() {
-	result, right := removeDecimalPoint([]byte("123.45678"))
-	su.Equal("12345678", string(result))
-	su.Equal(5, right)
+	{
+		result, right := removeDecimalPoint([]byte("123.45678"))
+		su.Equal("12345678", string(result))
+		su.Equal(5, right)
+	}
+	{
+		result, right := removeDecimalPoint([]byte("12345678."))
+		su.Equal("12345678", string(result))
+		su.Equal(0, right)
+	}
+	{
+		result, right := removeDecimalPoint([]byte(".12345678"))
+		su.Equal("12345678", string(result))
+		su.Equal(8, right)
+	}
 }
 
 func (su *DecimalSuite) TestMul() {
@@ -1319,6 +1781,1092 @@ func (su *DecimalSuite) TestDiv() {
 			su.Equal(tc.expected, result.String(),
 				"input: %s, %s, expected: %s, result: %s",
 				tc.d1, tc.d2, tc.expected, result)
+		})
+	}
+}
+
+func (su *DecimalSuite) TestFloor() {
+	testCases := []struct {
+		desc     string
+		input    string
+		floor    int
+		expected string
+	}{
+		{
+			desc:     "Normal",
+			input:    "123",
+			floor:    0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.123",
+			floor:    0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "120.000",
+			floor:    0,
+			expected: "120",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.123",
+			floor:    1,
+			expected: "123.1",
+		},
+		{
+			desc:     "No Need Floor",
+			input:    "123.123",
+			floor:    5,
+			expected: "123.123",
+		},
+		{
+			desc:     "No Need Floor",
+			input:    "123.123",
+			floor:    10,
+			expected: "123.123",
+		},
+		{
+			desc:     "Negative Floor",
+			input:    "123.123",
+			floor:    -1,
+			expected: "120",
+		},
+		{
+			desc:     "Negative Overflow Floor",
+			input:    "123.123",
+			floor:    -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Floor",
+			input:    "123.123",
+			floor:    -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "123",
+			floor:    3,
+			expected: "123",
+		},
+		{
+			desc:     "Zero",
+			input:    "0",
+			floor:    2,
+			expected: "0",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123",
+			floor:    0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.123",
+			floor:    0,
+			expected: "-124",
+		},
+		{
+			desc:     "Normal",
+			input:    "-120.000",
+			floor:    0,
+			expected: "-120",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.123",
+			floor:    1,
+			expected: "-123.2",
+		},
+		{
+			desc:     "No Need Floor",
+			input:    "-123.123",
+			floor:    5,
+			expected: "-123.123",
+		},
+		{
+			desc:     "No Need Floor",
+			input:    "-123.123",
+			floor:    10,
+			expected: "-123.123",
+		},
+		{
+			desc:     "Negative Floor",
+			input:    "-123.123",
+			floor:    -1,
+			expected: "-130",
+		},
+		{
+			desc:     "Negative Overflow Floor",
+			input:    "-123.123",
+			floor:    -3,
+			expected: "-1000",
+		},
+		{
+			desc:     "Negative Overflow Floor",
+			input:    "-123.123",
+			floor:    -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "-123",
+			floor:    3,
+			expected: "-123",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			d, err := New(tc.input)
+			su.Require().NoError(err, tc.desc)
+			su.Equal(tc.expected, d.Floor(tc.floor).String(), tc.desc)
+		})
+	}
+}
+
+func (su *DecimalSuite) TestCeil() {
+	testCases := []struct {
+		desc     string
+		input    string
+		ceil     int
+		expected string
+	}{
+		{
+			desc:     "Normal",
+			input:    "123",
+			ceil:     0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.123",
+			ceil:     0,
+			expected: "124",
+		},
+		{
+			desc:     "Normal",
+			input:    "120.000",
+			ceil:     0,
+			expected: "120",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.123",
+			ceil:     1,
+			expected: "123.2",
+		},
+		{
+			desc:     "No Need Ceil",
+			input:    "123.123",
+			ceil:     5,
+			expected: "123.123",
+		},
+		{
+			desc:     "No Need Ceil",
+			input:    "123.123",
+			ceil:     10,
+			expected: "123.123",
+		},
+		{
+			desc:     "Negative Ceil",
+			input:    "123.123",
+			ceil:     -1,
+			expected: "130",
+		},
+		{
+			desc:     "Negative Overflow Ceil",
+			input:    "123.123",
+			ceil:     -3,
+			expected: "1000",
+		},
+		{
+			desc:     "Negative Overflow Ceil",
+			input:    "123.123",
+			ceil:     -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "123",
+			ceil:     3,
+			expected: "123",
+		},
+		{
+			desc:     "Zero",
+			input:    "0",
+			ceil:     2,
+			expected: "0",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123",
+			ceil:     0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.123",
+			ceil:     0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-120.000",
+			ceil:     0,
+			expected: "-120",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.123",
+			ceil:     1,
+			expected: "-123.1",
+		},
+		{
+			desc:     "No Need Ceil",
+			input:    "-123.123",
+			ceil:     5,
+			expected: "-123.123",
+		},
+		{
+			desc:     "No Need Ceil",
+			input:    "-123.123",
+			ceil:     10,
+			expected: "-123.123",
+		},
+		{
+			desc:     "Negative Ceil",
+			input:    "-123.123",
+			ceil:     -1,
+			expected: "-120",
+		},
+		{
+			desc:     "Negative Overflow Ceil",
+			input:    "-123.123",
+			ceil:     -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Ceil",
+			input:    "-123.123",
+			ceil:     -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "-123",
+			ceil:     3,
+			expected: "-123",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			d, err := New(tc.input)
+			su.Require().NoError(err, tc.desc)
+			su.Equal(tc.expected, d.Ceil(tc.ceil).String(), "[%s] input: %s, ceil: %d, expected: %s, got: %s", tc.desc, tc.input, tc.ceil, tc.expected, d.Ceil(tc.ceil).String())
+		})
+	}
+}
+
+func (su *DecimalSuite) TestRound() {
+	testCases := []struct {
+		desc     string
+		input    string
+		round    int
+		expected string
+	}{
+		{
+			desc:     "Normal",
+			input:    "123",
+			round:    0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.456",
+			round:    0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.567",
+			round:    0,
+			expected: "124",
+		},
+		{
+			desc:     "Normal",
+			input:    "120.000",
+			round:    0,
+			expected: "120",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.345",
+			round:    1,
+			expected: "123.3",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.456",
+			round:    1,
+			expected: "123.5",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "123.123",
+			round:    5,
+			expected: "123.123",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "123.123",
+			round:    10,
+			expected: "123.123",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "124.567",
+			round:    -1,
+			expected: "120",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "125.678",
+			round:    -1,
+			expected: "130",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "456.789",
+			round:    -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "567.89",
+			round:    -3,
+			expected: "1000",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "123.123",
+			round:    -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "123",
+			round:    3,
+			expected: "123",
+		},
+		{
+			desc:     "Zero",
+			input:    "0",
+			round:    2,
+			expected: "0",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123",
+			round:    0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.456",
+			round:    0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.567",
+			round:    0,
+			expected: "-124",
+		},
+		{
+			desc:     "Normal",
+			input:    "-120.000",
+			round:    0,
+			expected: "-120",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.345",
+			round:    1,
+			expected: "-123.3",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.456",
+			round:    1,
+			expected: "-123.5",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "-123.123",
+			round:    5,
+			expected: "-123.123",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "-123.123",
+			round:    10,
+			expected: "-123.123",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "-124.567",
+			round:    -1,
+			expected: "-120",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "-125.678",
+			round:    -1,
+			expected: "-130",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-456.789",
+			round:    -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-567.89",
+			round:    -3,
+			expected: "-1000",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-123.123",
+			round:    -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "-123",
+			round:    3,
+			expected: "-123",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			d, err := New(tc.input)
+			su.Require().NoError(err, tc.desc)
+			su.Equal(tc.expected, d.Round(tc.round).String(), "[%s] input: %s, round: %d, expected: %s, got: %s", tc.desc, tc.input, tc.round, tc.expected, d.Round(tc.round).String())
+		})
+	}
+}
+
+func (su *DecimalSuite) TestRoundBank() {
+	testCases := []struct {
+		desc     string
+		input    string
+		round    int
+		expected string
+	}{
+		{
+			desc:     "Logic",
+			input:    "5.55",
+			round:    1,
+			expected: "5.6",
+		},
+		{
+			desc:     "Logic",
+			input:    "5.45",
+			round:    1,
+			expected: "5.4",
+		},
+		{
+			desc:     "Logic",
+			input:    "-5.55",
+			round:    1,
+			expected: "-5.6",
+		},
+		{
+			desc:     "Logic",
+			input:    "-5.45",
+			round:    1,
+			expected: "-5.4",
+		},
+		{
+			desc:     "Normal",
+			input:    "123",
+			round:    0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.456",
+			round:    0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.567",
+			round:    0,
+			expected: "124",
+		},
+		{
+			desc:     "Normal",
+			input:    "120.000",
+			round:    0,
+			expected: "120",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.345",
+			round:    1,
+			expected: "123.3",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.456",
+			round:    1,
+			expected: "123.4",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "123.123",
+			round:    5,
+			expected: "123.123",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "123.123",
+			round:    10,
+			expected: "123.123",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "124.567",
+			round:    -1,
+			expected: "120",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "125.678",
+			round:    -1,
+			expected: "120",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "456.789",
+			round:    -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "567.89",
+			round:    -3,
+			expected: "1000",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "123.123",
+			round:    -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "123",
+			round:    3,
+			expected: "123",
+		},
+		{
+			desc:     "Zero",
+			input:    "0",
+			round:    2,
+			expected: "0",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123",
+			round:    0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.456",
+			round:    0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.567",
+			round:    0,
+			expected: "-124",
+		},
+		{
+			desc:     "Normal",
+			input:    "-120.000",
+			round:    0,
+			expected: "-120",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.345",
+			round:    1,
+			expected: "-123.3",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.456",
+			round:    1,
+			expected: "-123.4",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "-123.123",
+			round:    5,
+			expected: "-123.123",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "-123.123",
+			round:    10,
+			expected: "-123.123",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "-124.567",
+			round:    -1,
+			expected: "-120",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "-125.678",
+			round:    -1,
+			expected: "-120",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-456.789",
+			round:    -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-567.89",
+			round:    -3,
+			expected: "-1000",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-123.123",
+			round:    -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "-123",
+			round:    3,
+			expected: "-123",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			d, err := New(tc.input)
+			su.Require().NoError(err, tc.desc)
+			su.Equal(tc.expected, d.RoundBank(tc.round).String(), "[%s] input: %s, round: %d, expected: '%s', got: '%s'", tc.desc, tc.input, tc.round, tc.expected, d.RoundBank(tc.round).String())
+		})
+	}
+}
+
+func (su *DecimalSuite) TestRoundAwayFromZero() {
+	testCases := []struct {
+		desc     string
+		input    string
+		round    int
+		expected string
+	}{
+		{
+			desc:     "Normal",
+			input:    "123",
+			round:    0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.456",
+			round:    0,
+			expected: "124",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.567",
+			round:    0,
+			expected: "124",
+		},
+		{
+			desc:     "Normal",
+			input:    "120.000",
+			round:    0,
+			expected: "120",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.345",
+			round:    1,
+			expected: "123.4",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.456",
+			round:    1,
+			expected: "123.5",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "123.123",
+			round:    5,
+			expected: "123.123",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "123.123",
+			round:    10,
+			expected: "123.123",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "124.567",
+			round:    -1,
+			expected: "130",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "125.678",
+			round:    -1,
+			expected: "130",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "456.789",
+			round:    -3,
+			expected: "1000",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "567.89",
+			round:    -3,
+			expected: "1000",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "123.123",
+			round:    -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "123",
+			round:    3,
+			expected: "123",
+		},
+		{
+			desc:     "Zero",
+			input:    "0",
+			round:    2,
+			expected: "0",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123",
+			round:    0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.456",
+			round:    0,
+			expected: "-124",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.567",
+			round:    0,
+			expected: "-124",
+		},
+		{
+			desc:     "Normal",
+			input:    "-120.000",
+			round:    0,
+			expected: "-120",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.345",
+			round:    1,
+			expected: "-123.4",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.456",
+			round:    1,
+			expected: "-123.5",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "-123.123",
+			round:    5,
+			expected: "-123.123",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "-123.123",
+			round:    10,
+			expected: "-123.123",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "-124.567",
+			round:    -1,
+			expected: "-130",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "-125.678",
+			round:    -1,
+			expected: "-130",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-456.789",
+			round:    -3,
+			expected: "-1000",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-567.89",
+			round:    -3,
+			expected: "-1000",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-123.123",
+			round:    -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "-123",
+			round:    3,
+			expected: "-123",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			d, err := New(tc.input)
+			su.Require().NoError(err, tc.desc)
+			su.Equal(tc.expected, d.RoundAwayFromZero(tc.round).String(), "[%s] input: %s, round: %d, expected: %s, got: %s", tc.desc, tc.input, tc.round, tc.expected, d.RoundAwayFromZero(tc.round).String())
+		})
+	}
+}
+
+func (su *DecimalSuite) TestRoundTowardToZero() {
+	testCases := []struct {
+		desc     string
+		input    string
+		round    int
+		expected string
+	}{
+		{
+			desc:     "Normal",
+			input:    "123",
+			round:    0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.456",
+			round:    0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.567",
+			round:    0,
+			expected: "123",
+		},
+		{
+			desc:     "Normal",
+			input:    "120.000",
+			round:    0,
+			expected: "120",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.345",
+			round:    1,
+			expected: "123.3",
+		},
+		{
+			desc:     "Normal",
+			input:    "123.456",
+			round:    1,
+			expected: "123.4",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "123.123",
+			round:    5,
+			expected: "123.123",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "123.123",
+			round:    10,
+			expected: "123.123",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "124.567",
+			round:    -1,
+			expected: "120",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "125.678",
+			round:    -1,
+			expected: "120",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "456.789",
+			round:    -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "567.89",
+			round:    -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "123.123",
+			round:    -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "123",
+			round:    3,
+			expected: "123",
+		},
+		{
+			desc:     "Zero",
+			input:    "0",
+			round:    2,
+			expected: "0",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123",
+			round:    0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.456",
+			round:    0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.567",
+			round:    0,
+			expected: "-123",
+		},
+		{
+			desc:     "Normal",
+			input:    "-120.000",
+			round:    0,
+			expected: "-120",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.345",
+			round:    1,
+			expected: "-123.3",
+		},
+		{
+			desc:     "Normal",
+			input:    "-123.456",
+			round:    1,
+			expected: "-123.4",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "-123.123",
+			round:    5,
+			expected: "-123.123",
+		},
+		{
+			desc:     "No Need Round",
+			input:    "-123.123",
+			round:    10,
+			expected: "-123.123",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "-124.567",
+			round:    -1,
+			expected: "-120",
+		},
+		{
+			desc:     "Negative Round",
+			input:    "-125.678",
+			round:    -1,
+			expected: "-120",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-456.789",
+			round:    -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-567.89",
+			round:    -3,
+			expected: "0",
+		},
+		{
+			desc:     "Negative Overflow Round",
+			input:    "-123.123",
+			round:    -10,
+			expected: "0",
+		},
+		{
+			desc:     "Natural Number",
+			input:    "-123",
+			round:    3,
+			expected: "-123",
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			d, err := New(tc.input)
+			su.Require().NoError(err, tc.desc)
+			su.Equal(tc.expected, d.RoundTowardToZero(tc.round).String(), "[%s] input: %s, round: %d, expected: %s, got: %s", tc.desc, tc.input, tc.round, tc.expected, d.RoundTowardToZero(tc.round).String())
 		})
 	}
 }

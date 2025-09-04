@@ -1,6 +1,8 @@
 package decimal
 
-// pushFront pushes values to the front of the slice
+// pushBackRepeat pushes values to the back of the slice
+//
+// NOTE: COPY WHEN CAPACITY NOT ENOUGH
 func pushBackRepeat(slice []byte, value byte, count int) []byte {
 	resultLen := len(slice) + count
 	if cap(slice) >= resultLen {
@@ -21,6 +23,8 @@ func pushBackRepeat(slice []byte, value byte, count int) []byte {
 }
 
 // pushFront pushes values to the front of the slice
+//
+// NOTE: COPY WHEN CAPACITY NOT ENOUGH
 func pushFrontRepeat(slice []byte, value byte, count int) []byte {
 	resultLen := len(slice) + count
 	if cap(slice) >= resultLen {
@@ -46,6 +50,8 @@ func pushFrontRepeat(slice []byte, value byte, count int) []byte {
 }
 
 // pushFront pushes values to the front of the slice
+//
+// NOTE: COPY WHEN CAPACITY NOT ENOUGH
 func pushFront(slice []byte, values ...byte) []byte {
 	count := len(values)
 	resultLen := len(slice) + count
@@ -68,6 +74,9 @@ func pushFront(slice []byte, values ...byte) []byte {
 	return buf
 }
 
+// pushBack pushes values to the back of the slice
+//
+// NOTE: COPY WHEN CAPACITY NOT ENOUGH
 func pushBack(slice []byte, values ...byte) []byte {
 	return append(extend(slice, len(slice)+len(values)), values...)
 }
@@ -75,6 +84,8 @@ func pushBack(slice []byte, values ...byte) []byte {
 // remove removes the element at the given index and returns the slice without the element.
 //
 // It keeps the capacity of the slice.
+//
+// NOTE: NO COPY
 func remove(slice []byte, idx int) []byte {
 	if idx < 0 || idx >= len(slice) {
 		return slice
@@ -83,6 +94,9 @@ func remove(slice []byte, idx int) []byte {
 	return append(slice[:idx], slice[idx+1:]...)
 }
 
+// extend extends the slice to the target capacity
+//
+// NOTE: COPY WHEN CAPACITY NOT ENOUGH
 func extend(slice []byte, targetCap int) []byte {
 	if cap(slice) >= targetCap {
 		return slice
@@ -91,6 +105,9 @@ func extend(slice []byte, targetCap int) []byte {
 	return append(make([]byte, 0, targetCap), slice...)
 }
 
+// insert inserts the value at the given index and returns the slice with the value.
+//
+// NOTE: COPY WHEN CAPACITY NOT ENOUGH
 func insert(slice []byte, idx int, value byte) []byte {
 	if idx < 0 || idx > len(slice) {
 		return slice
@@ -118,6 +135,8 @@ func insert(slice []byte, idx int, value byte) []byte {
 // trimFront equals to slice[count:]
 //
 // It keeps the capacity of the slice.
+//
+// NOTE: NO COPY
 func trimFront(slice []byte, start int) []byte {
 	if start <= 0 {
 		return slice
@@ -133,6 +152,8 @@ func trimFront(slice []byte, start int) []byte {
 // trimBack equals to slice[:len(slice)-end]
 //
 // It keeps the capacity of the slice.
+//
+// NOTE: NO COPY
 func trimBack(slice []byte, count int) []byte {
 	if count <= 0 {
 		return slice
@@ -148,6 +169,8 @@ func trimBack(slice []byte, count int) []byte {
 // trim equals to slice[start:end]
 //
 // It keeps the capacity of the slice.
+//
+// NOTE: NO COPY
 func trim(slice []byte, start, end int) []byte {
 	if start >= len(slice) || end <= 0 {
 		return slice[:0]

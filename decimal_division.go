@@ -7,11 +7,6 @@ import (
 
 // Div2 returns d / d2 with better performance compared with Div.
 //
-// Key improvements over Div:
-//  1. 避免重複的字串 <-> []byte 轉換；
-//  2. 以 big.Int 直接做 10^n 的位移運算，而非再把結果回寫到字串後用 shift/truncate；
-//  3. 內建快取 10 的冪次，減少重複 big.Int.Exp 的昂貴呼叫。
-//
 // The algorithm:
 //
 //	Suppose d  -> A / 10^iShift,  d2 -> B / 10^i2Shift.

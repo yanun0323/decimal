@@ -13,8 +13,7 @@ var (
 // quickCheckZero returns true when the given byte slice represents a
 // variety of textual zero values ("0", "00", "+0", "-0", ".0", "0." …).
 //
-// 與先前實作相比，避免了 `string(buf)` 造成的記憶體配置與一次性複製，
-// 直接以長度與索引檢查，大幅降低熱路徑上的 GC 壓力與 CPU 週期。
+// NOTE: COPY WHEN NEED ADD '0.' '-' '-0.' BUT CAPACITY NOT ENOUGH
 func quickCheckZero(buf []byte) bool {
 	switch len(buf) {
 	case 0:
@@ -124,6 +123,8 @@ func newDecimal(buf []byte) ([]byte, error) {
 }
 
 // clean the zero and dot of prefixes and suffixes
+//
+// NOTE: COPY ONLY WHEN THE PREFIX IS '.'
 func tidyBytes(num []byte) []byte {
 	if len(num) == 0 {
 		return zeroBytes
@@ -202,12 +203,16 @@ func tidyBytes(num []byte) []byte {
 	return result
 }
 
+// findDotIndex finds the index of the first dot in the buffer.
+//
+// NOTE: NO COPY
 func findDotIndex(buf []byte) int {
 	return bytes.IndexByte(buf, '.')
 }
 
 // sign returns 1 if buf represents a positive number, 0 if zero, -1 if negative.
-// 以單趟掃描完成零值與符號判定，後續比較可重複利用結果而不必再次遍歷。
+//
+// NOTE: NO COPY
 func sign(buf []byte) int8 {
 	neg := false
 	if len(buf) > 0 && buf[0] == '-' {
@@ -227,6 +232,7 @@ func sign(buf []byte) int8 {
 	return 0
 }
 
+// normalize make sure the buf is a valid decimal bytes
 func normalize(buf []byte) []byte {
 	normalized, err := newDecimal(buf)
 	if err != nil {
@@ -236,35 +242,42 @@ func normalize(buf []byte) []byte {
 	return normalized
 }
 
-func truncate(buf []byte, i int) []byte {
+// truncate truncates the buffer by the given index
+//
+// NOTE: COPY WHEN CAPACITY NOT ENOUGH
+func truncate(buf []byte, prec int) []byte {
+	if buf[0] == '-' {
+		return pushFront(truncate(trimFront(buf, 1), prec), '-')
+	}
+
 	dotIdx := findDotIndex(buf)
 
-	if i < 0 { // positive
-		i = -i
+	if prec < 0 {
+		prec = -prec
 		if dotIdx != -1 {
 			buf = buf[:dotIdx]
 		}
 
-		if i == 0 {
+		if prec == 0 {
 			return buf
 		}
 
-		if i >= len(buf) {
+		if prec >= len(buf) {
 			return zeroBytes
 		}
-		return pushBackRepeat(buf[:len(buf)-1], '0', i)
+
+		return pushBackRepeat(buf[:len(buf)-1], '0', prec)
 	}
 
-	// negative
 	if dotIdx == -1 {
 		return buf
 	}
 
-	if i == 0 {
+	if prec == 0 {
 		return buf[:dotIdx]
 	}
 
-	p := dotIdx + i + 1
+	p := dotIdx + prec + 1
 	if p >= len(buf) {
 		return buf
 	}
@@ -513,6 +526,8 @@ func unsignedSub(a, b []byte) []byte {
 func isZero(buf []byte) bool {
 	for _, c := range buf {
 		switch c {
+		case '-':
+			continue
 		case '0', '.':
 			continue
 		default:

@@ -1,6 +1,9 @@
 package decimal
 
 import (
+	"math"
+	"math/big"
+	"strconv"
 	"strings"
 )
 
@@ -8,25 +11,27 @@ import (
 在不影响逻辑正确性的前提下, 优化此函数，让他运行的更快速、消耗更少记忆体
 */
 
-var (
+const (
+	// DivisionPrecision is the number of decimal places for division operations.
 	DivisionPrecision = 16
 	zero              = Decimal("0")
+	_zero             = "0"
 )
 
-// Zero return the zero decimal
+// Zero create a zero decimal
 func Zero() Decimal {
 	return zero
 }
 
-// New create a Decimal.
+// New create a Decimal. If value is empty, return zero.
 //
-// acceptable symbol (+-.,_0123456789)
-//
-// Example:
-//
-//	d, err := decimal.New("123,456,789.000")
-func New(s string) (Decimal, error) {
-	buf, err := newDecimal([]byte(s))
+// Acceptable symbol (+-.,_0123456789)
+func New(value ...string) (Decimal, error) {
+	if len(value) == 0 {
+		return zero, nil
+	}
+
+	buf, err := newDecimal([]byte(value[0]))
 	if err != nil {
 		return zero, err
 	}
@@ -36,21 +41,125 @@ func New(s string) (Decimal, error) {
 
 // Require returns a new Decimal from a string representation or panics if New would have returned an error.
 //
+// Acceptable symbol (+-.,_0123456789)
+//
 // Example:
 //
 //	d := decimal.Require("123,456")
-//	d.String() // "123456"
+//	d2 := decimal.Require("")        // "0"
+//	d3 := decimal.Require("&$")      // Panic!!!
+func Require(value string) Decimal {
+	return Decimal(normalize([]byte(value)))
+}
+
+// NewFromInt converts a int64 to Decimal.
+func NewFromInt(value int64) Decimal {
+	return Decimal(strconv.FormatInt(value, 10))
+}
+
+// NewFromInt32 converts a int32 to Decimal.
+func NewFromInt32(value int32) Decimal {
+	return Decimal(strconv.FormatInt(int64(value), 10))
+}
+
+// NewFromFloat create a Decimal from a float64.
 //
-//	d2 := decimal.Require("") // Panic!!!
-func Require(s string) Decimal {
-	return Decimal(normalize([]byte(s)))
+// NOTE: this will create zero value on NaN, +/-inf
+func NewFromFloat(value float64) Decimal {
+	if math.IsNaN(value) || math.IsInf(value, 0) {
+		return zero
+	}
+
+	return Decimal(strconv.FormatFloat(value, 'f', -1, 64))
+}
+
+// NewFromFloat32 create a Decimal from a float32.
+//
+// NOTE: this will create zero value on NaN, +/-inf
+func NewFromFloat32(value float32) Decimal {
+	vf := float64(value)
+	if math.IsNaN(vf) || math.IsInf(vf, 0) {
+		return zero
+	}
+
+	return Decimal(strconv.FormatFloat(vf, 'f', -1, 64))
+}
+
+// NewFromBigInt returns a new Decimal from a big.Int, value * 10 ^ exp
+func NewFromBigInt(value *big.Int, exp int) Decimal {
+	return Decimal(shift([]byte(value.String()), exp))
+}
+
+// NewFromString returns a new Decimal from a string representation.
+// Trailing zeroes are not trimmed.
+//
+// Acceptable symbol (+-.,_0123456789)
+//
+// NOTE: This function is for compatibility with the shopspring/decimal package.
+// Please use New instead.
+//
+// Deprecated: Use New(value) instead.
+func NewFromString(value string) (Decimal, error) {
+	return New(value)
+}
+
+// RequireFromString returns a new Decimal from a string representation
+// or panics if NewFromString would have returned an error.
+//
+// Acceptable symbol (+-.,_0123456789)
+//
+// NOTE: This function is for compatibility with the shopspring/decimal package.
+// Please use Require instead.
+//
+// Deprecated: Use Require(value) instead.
+func RequireFromString(value string) Decimal {
+	return Require(value)
 }
 
 type Decimal string
 
-// String return string from Decimal
+// String returns the string representation of the decimal with the fixed point.
+//
+// Example:
+//
+//	d := New("-12.345")
+//	println(d.String())
+//
+// Output:
+//
+//	-12.345
 func (d Decimal) String() string {
 	return string(normalize([]byte(d)))
+}
+
+// StringFixed returns a rounded fixed-point string with places digits after the decimal point.
+//
+// Example:
+//
+//	NewFromFloat(0).StringFixed(2)    // "0.00"
+//	NewFromFloat(0).StringFixed(0)    // "0"
+//	NewFromFloat(5.45).StringFixed(0) // "5"
+//	NewFromFloat(5.45).StringFixed(1) // "5.5"
+//	NewFromFloat(5.45).StringFixed(2) // "5.45"
+//	NewFromFloat(5.45).StringFixed(3) // "5.450"
+//	NewFromFloat(545).StringFixed(-1) // "550"
+func (d Decimal) StringFixed(places int) string {
+	buf := normalize(truncate([]byte(d), places))
+	if places <= 0 {
+		return string(buf)
+	}
+
+	dotIdx := findDotIndex(buf)
+	if dotIdx == -1 {
+		dotIdx = len(buf) - 1
+	}
+
+	rightDotIdx := len(buf) - 1 - dotIdx
+	if places > rightDotIdx {
+		buf = pushBackRepeat(buf, '0', places-rightDotIdx)
+	}
+
+	return string(buf)
 }
 
 // Abs returns the absolute value of the decimal.
@@ -68,8 +177,7 @@ func (d Decimal) Abs() Decimal {
 //
 // Example:
 //
-//	d, _ := decimal.New("123.456")
-//	d.Neg().String() // "-123.45"
+//	decimal.New("123.456").Neg().String() // "-123.45"
 func (d Decimal) Neg() Decimal {
 	buf := normalize([]byte(d))
 
@@ -86,18 +194,18 @@ func (d Decimal) Neg() Decimal {
 //
 // Example:
 //
-//	d, _ := decimal.New("123.456")
-//	d.Truncate(2).String() // "123.45"
-func (d Decimal) Truncate(i int) Decimal {
-	return Decimal(truncate(normalize([]byte(d)), i))
-}
+//	decimal.New("123.456").Truncate(2).String() // "123.45"
+func (d Decimal) Truncate(precision int) Decimal {
+	if precision > len(d) {
+		return d
+	}
 
-const (
-	_zero        = "0"
-	_zeroDot     = "0."
-	_zeroDotZero = "0.0"
-	_dotZero     = ".0"
-)
+	if -precision > len(d) {
+		return zero
+	}
+
+	return Decimal(truncate(normalize([]byte(d)), precision))
+}
 
 // Shift shifts the decimal in base 10.
 // It shifts left when shift is positive and right if shift is negative.
@@ -194,20 +302,6 @@ func (d Decimal) Sub(d2 Decimal) Decimal {
 
 	// b - a = b - a
 	return Decimal(unsignedSub(b, a))
-}
-
-// findOrInsertDecimalPoint find the index of decimal point. (if no decimal point, it will insert it into the end of the number)
-//
-// return inserted number and index of decimal point
-func findOrInsertDecimalPoint(num []byte) ([]byte, int) {
-	for i, b := range num {
-		if b == '.' {
-			return num, i
-		}
-	}
-	// No decimal point found, append it
-	num = append(num, '.')
-	return num, len(num) - 1
 }
 
 // clean the zero and dot of prefixes and suffixes
@@ -411,6 +505,8 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 }
 
 // removeDecimalPoint removes decimal point and return the count of the digit right the decimal
+//
+// OPTIMIZED: NO COPY
 func removeDecimalPoint(s []byte) (result []byte, countOfRightSide int) {
 	for i := range s {
 		if s[i] == '.' {
@@ -467,4 +563,287 @@ func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 	}
 
 	return trimBack(result, extraCap)
+}
+
+// Sign return the sign of the decimal
+//
+// return 1 if d > 0, 0 if d == 0, -1 if d < 0
+func (d Decimal) Sign() int {
+	return int(sign(normalize([]byte(d))))
+}
+
+// Round rounds the decimal to places decimal places.
+// If places < 0, it will round the integer part to the nearest 10^(-places).
+//
+// Example:
+//
+//	NewFromFloat(5.45).Round(1).String() // "5.5"
+//	NewFromFloat(545).Round(-1).String() // "550"
+func (d Decimal) Round(places int) Decimal {
+	return Decimal(roundInCondition(normalize([]byte(d)), places, func(isDecimalNeg bool, bankChar, roundChar byte) bool {
+		return roundChar >= '5'
+	}))
+}
+
+// RoundBank rounds the decimal to places decimal places.
+// If the final digit to round is equidistant from the nearest two integers the
+// rounded value is taken as the even number
+//
+// If places < 0, it will round the integer part to the nearest 10^(-places).
+//
+// Examples:
+//
+//	NewFromFloat(5.45).RoundBank(1).String() // "5.4"
+//	NewFromFloat(545).RoundBank(-1).String() // "540"
+//	NewFromFloat(5.46).RoundBank(1).String() // "5.5"
+//	NewFromFloat(546).RoundBank(-1).String() // "550"
+//	NewFromFloat(5.55).RoundBank(1).String() // "5.6"
+//	NewFromFloat(555).RoundBank(-1).String() // "560"
+func (d Decimal) RoundBank(places int) Decimal {
+	return Decimal(roundInCondition(normalize([]byte(d)), places, func(isDecimalNeg bool, bankChar, roundChar byte) bool {
+		return roundChar > '5' || (roundChar == '5' && (bankChar-'0')%2 == 1)
+	}))
+}
+
+// RoundAwayFromZero rounds the decimal away from zero.
+//
+// Example:
+//
+//	NewFromFloat(545).RoundAwayFromZero(-2).String()   // "600"
+//	NewFromFloat(-545).RoundAwayFromZero(-2).String()   // "-600"
+//	NewFromFloat(1.1001).RoundAwayFromZero(2).String() // "1.11"
+//	NewFromFloat(-1.454).RoundAwayFromZero(1).String() // "-1.5"
+func (d Decimal) RoundAwayFromZero(places int) Decimal {
+	return Decimal(roundInCondition(normalize([]byte(d)), places, func(isDecimalNeg bool, bankChar, roundChar byte) bool {
+		return roundChar != '0'
+	}))
+}
+
+// RoundTowardToZero rounds the decimal towards zero.
+//
+// Example:
+//
+//	NewFromFloat(545).RoundTowardToZero(-2).String()   // "500"
+//	NewFromFloat(-545).RoundTowardToZero(-2).String()  // "-500"
+//	NewFromFloat(1.1001).RoundTowardToZero(2).String() // "1.1"
+//	NewFromFloat(-1.454).RoundTowardToZero(1).String() // "-1.4"
+func (d Decimal) RoundTowardToZero(places int) Decimal {
+	return Decimal(truncate(normalize([]byte(d)), places))
+}
+
+// RoundUp rounds the decimal away from zero.
+//
+// NOTE: This function is for compatibility with the shopspring/decimal package.
+// Please use RoundAwayFromZero instead.
+//
+// Deprecated: Use RoundAwayFromZero(places) instead.
+func (d Decimal) RoundUp(places int) Decimal {
+	return d.RoundAwayFromZero(places)
+}
+
+// RoundDown rounds the decimal towards zero.
+//
+// NOTE: This function is for compatibility with the shopspring/decimal package.
+// Please use RoundTowardToZero instead.
+//
+// Deprecated: Use RoundTowardToZero(places) instead.
+func (d Decimal) RoundDown(places int) Decimal {
+	return d.RoundTowardToZero(places)
+}
+
+// RoundFloor rounds the decimal towards zero.
+//
+// NOTE: This function is for compatibility with the shopspring/decimal package.
+// Please use Floor instead.
+//
+// Deprecated: Use Floor(places) instead.
+func (d Decimal) RoundFloor(places int) Decimal {
+	return d.Floor(places)
+}
+
+// RoundCeil rounds the decimal towards +infinity.
+//
+// NOTE: This function is for compatibility with the shopspring/decimal package.
+// Please use Ceil instead.
+//
+// Deprecated: Use Ceil(places) instead.
+func (d Decimal) RoundCeil(places int) Decimal {
+	return d.Ceil(places)
+}
+
+// Ceil rounds the decimal towards +infinity.
+//
+// Example:
+//
+//	NewFromFloat(545).Ceil(-2).String()   // "600"
+//	NewFromFloat(-545).Ceil(-2).String()   // "-500"
+//	NewFromFloat(1.1001).Ceil(2).String() // "1.11"
+//	NewFromFloat(-1.454).Ceil(1).String() // "-1.4"
+func (d Decimal) Ceil(places int) Decimal {
+	return Decimal(roundInCondition(normalize([]byte(d)), places, func(isDecimalNeg bool, bankChar, roundChar byte) bool {
+		if isDecimalNeg {
+			return roundChar == '0'
+		} else {
+			return roundChar != '0'
+		}
+	}))
+}
+
+// Floor rounds the decimal towards -infinity.
+//
+// Example:
+//
+//	NewFromFloat(545).Floor(-2).String()   //  "500"
+//	NewFromFloat(-545).Floor(-2).String()  //  "-600"
+//	NewFromFloat(1.1001).Floor(2).String() //  "1.1"
+//	NewFromFloat(-1.454).Floor(1).String() //  "-1.5"
+func (d Decimal) Floor(places int) Decimal {
+	return Decimal(roundInCondition(normalize([]byte(d)), places, func(isDecimalNeg bool, bankChar, roundChar byte) bool {
+		if isDecimalNeg {
+			return roundChar != '0'
+		} else {
+			return roundChar == '0'
+		}
+	}))
+}
+
+// roundInCondition rounds the decimal in the condition
+func roundInCondition(buf []byte, place int, carryCond func(isDecimalNeg bool, bankChar, roundChar byte) bool) []byte {
+	isDecimalNeg := len(buf) != 0 && buf[0] == '-'
+	var result []byte
+	if isDecimalNeg {
+		result = roundInConditionWithoutSign(trimFront(buf, 1), place, isDecimalNeg, carryCond)
+	} else {
+		result = roundInConditionWithoutSign(buf, place, isDecimalNeg, carryCond)
+	}
+
+	if isZero(result) {
+		return zeroBytes
+	}
+
+	if isDecimalNeg {
+		return pushFront(result, '-')
+	}
+
+	return result
+}
+
+func roundInConditionWithoutSign(buf []byte, places int, isDecimalNeg bool, carryCond func(isDecimalNeg bool, bankChar, roundChar byte) bool) []byte {
+	dotIdx := findDotIndex(buf)
+	// Handle negative precision (round to left of decimal point)
+	if places < 0 {
+		var roundPos int
+		negPlace := -places
+
+		if dotIdx == -1 {
+			roundPos = len(buf) - negPlace
+		} else {
+			roundPos = dotIdx - negPlace
+		}
+
+		if roundPos <= -1 {
+			return zeroBytes
+		}
+
+		var (
+			needCarry bool
+			result    []byte
+		)
+
+		if roundPos == 0 {
+			needCarry = roundPos < len(buf) && carryCond(isDecimalNeg, '1', buf[roundPos])
+			result = buf[:roundPos]
+		} else {
+			needCarry = roundPos < len(buf) && carryCond(isDecimalNeg, buf[roundPos-1], buf[roundPos])
+			result = buf[:roundPos]
+		}
+
+		if needCarry {
+			result = addCarryToPosition(result, roundPos-1)
+		}
+
+		return pushBackRepeat(result, '0', negPlace)
+	}
+
+	// Handle zero or positive precision (round at or right of decimal point)
+	if dotIdx == -1 {
+		// No decimal point, no rounding needed for positive precision
+		return buf
+	}
+
+	if places == 0 {
+		var (
+			needCarry bool
+			result    []byte
+		)
+		// Round to integer
+		if dotIdx == 0 {
+			needCarry = dotIdx+1 < len(buf) && carryCond(isDecimalNeg, '0', buf[dotIdx+1])
+			result = buf[:dotIdx]
+		} else {
+			needCarry = dotIdx+1 < len(buf) && carryCond(isDecimalNeg, buf[dotIdx-1], buf[dotIdx+1])
+			result = buf[:dotIdx]
+		}
+
+		if needCarry {
+			result = addCarryToPosition(result, len(result)-1)
+		}
+
+		return result
+	}
+
+	// Positive precision
+	roundPos := dotIdx + places + 1
+	if roundPos >= len(buf) {
+		// Already has fewer digits than requested precision
+		return buf
+	}
+
+	var (
+		needCarry bool
+		result    []byte
+	)
+	if roundPos == 0 {
+		needCarry = carryCond(isDecimalNeg, '1', buf[roundPos])
+		result = buf[:roundPos]
+	} else {
+		needCarry = carryCond(isDecimalNeg, buf[roundPos-1], buf[roundPos])
+		result = buf[:roundPos]
+	}
+
+	if needCarry {
+		result = addCarryToPosition(result, roundPos-1)
+	}
+
+	return result
+}
+
+// addCarryToPosition adds 1 to the digit at the specified position and handles carry propagation
+func addCarryToPosition(buf []byte, pos int) []byte {
+	if pos < 0 || len(buf) == 0 {
+		return pushFront(buf, '1')
+	}
+
+	carry := byte(1)
+	for i := pos; i >= 0 && carry > 0; i-- {
+		if buf[i] == '.' {
+			continue
+		}
+
+		digit := buf[i] - '0' + carry
+		if digit <= 9 {
+			buf[i] = digit + '0'
+			carry = 0
+		} else {
+			buf[i] = '0'
+			carry = 1
+		}
+	}
+
+	// If there's still a carry, we need to add a digit at the front
+	if carry > 0 {
+		buf = pushFront(buf, '1')
+	}
+
+	return buf
 }
