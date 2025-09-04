@@ -27,7 +27,7 @@ func (d Decimal) Div(d2 Decimal) Decimal {
 		panic("division by zero")
 	}
 	if isZero(a) {
-		return Zero()
+		return Zero
 	}
 
 	// Remove decimal point to get pure integer representations

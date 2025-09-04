@@ -7,33 +7,28 @@ import (
 	"strings"
 )
 
-/*
-在不影响逻辑正确性的前提下, 优化此函数，让他运行的更快速、消耗更少记忆体
-*/
-
 const (
 	// DivisionPrecision is the number of decimal places for division operations.
-	DivisionPrecision int     = 16
-	zero              Decimal = Decimal("0")
-	_zero                     = "0"
-)
+	DivisionPrecision int = 16
 
-// Zero create a zero decimal
-func Zero() Decimal {
-	return zero
-}
+	// Zero constant, to make computations faster.
+	// Zero should never be compared with == or != directly, please use decimal.Equal or decimal.Cmp instead.
+	Zero Decimal = Decimal("0")
+
+	_zero = "0"
+)
 
 // New create a Decimal. If value is empty, return zero.
 //
 // Acceptable symbol (+-.,_0123456789)
 func New(value ...string) (Decimal, error) {
 	if len(value) == 0 {
-		return zero, nil
+		return Zero, nil
 	}
 
 	buf, err := newDecimal([]byte(value[0]))
 	if err != nil {
-		return zero, err
+		return Zero, err
 	}
 
 	return Decimal(buf), nil
@@ -67,7 +62,7 @@ func NewFromInt32(value int32) Decimal {
 // NOTE: this will create zero value on NaN, +/-inf
 func NewFromFloat(value float64) Decimal {
 	if math.IsNaN(value) || math.IsInf(value, 0) {
-		return zero
+		return Zero
 	}
 
 	return Decimal(strconv.FormatFloat(value, 'f', -1, 64))
@@ -79,7 +74,7 @@ func NewFromFloat(value float64) Decimal {
 func NewFromFloat32(value float32) Decimal {
 	vf := float64(value)
 	if math.IsNaN(vf) || math.IsInf(vf, 0) {
-		return zero
+		return Zero
 	}
 
 	return Decimal(strconv.FormatFloat(vf, 'f', -1, 64))
@@ -201,7 +196,7 @@ func (d Decimal) Truncate(precision int) Decimal {
 	}
 
 	if -precision > len(d) {
-		return zero
+		return Zero
 	}
 
 	return Decimal(truncate(normalize([]byte(d)), precision))
@@ -422,6 +417,26 @@ func (d Decimal) IsNegative() bool {
 	return isNegative([]byte(d))
 }
 
+// Cmp compares the numbers represented by d and d2 and returns:
+//
+//	-1 if d <  d2
+//	 0 if d == d2
+//	+1 if d >  d2
+func (d Decimal) Cmp(d2 Decimal) int {
+	b := normalize([]byte(d))
+	b2 := normalize([]byte(d2))
+
+	if string(b) == string(b2) {
+		return 0
+	}
+
+	if greater(b, b2) {
+		return 1
+	}
+
+	return -1
+}
+
 // Equal return d == d2
 func (d Decimal) Equal(d2 Decimal) bool {
 	return string(normalize([]byte(d))) == string(normalize([]byte(d2)))
@@ -453,7 +468,7 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 	b := normalize([]byte(d2))
 
 	if isZero(a) || isZero(b) {
-		return zero
+		return Zero
 	}
 
 	right1 := findDotIndex(a)

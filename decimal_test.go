@@ -1112,6 +1112,87 @@ func (su *DecimalSuite) TestIsNegative() {
 	}
 }
 
+func (su *DecimalSuite) TestCmp() {
+	testCases := []struct {
+		desc     string
+		d1, d2   Decimal
+		expected int
+	}{
+		{
+			d1:       "123",
+			d2:       "123",
+			expected: 0,
+		},
+		{
+			d1:       "123",
+			d2:       "124",
+			expected: -1,
+		},
+		{
+			d1:       "123",
+			d2:       "122",
+			expected: 1,
+		},
+		{
+			d1:       "-123",
+			d2:       "-123",
+			expected: 0,
+		},
+		{
+			d1:       "-123",
+			d2:       "-122",
+			expected: -1,
+		},
+		{
+			d1:       "-123",
+			d2:       "-124",
+			expected: 1,
+		},
+		{
+			d1:       "123456.88",
+			d2:       "123456.88",
+			expected: 0,
+		},
+		{
+			d1:       "123456.88",
+			d2:       "123456.89",
+			expected: -1,
+		},
+		{
+			d1:       "123456.88",
+			d2:       "123456.87",
+			expected: 1,
+		},
+		{
+			d1:       "-123456.88",
+			d2:       "-123456.88",
+			expected: 0,
+		},
+		{
+			d1:       "-123456.88",
+			d2:       "-123456.87",
+			expected: -1,
+		},
+		{
+			d1:       "-123456.88",
+			d2:       "-123456.89",
+			expected: 1,
+		},
+		{
+			d1:       "0",
+			d2:       "0",
+			expected: 0,
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.d1.Cmp(tc.d2), tc.expected)
+		})
+	}
+}
+
 func (su *DecimalSuite) TestEqual() {
 	testCases := []struct {
 		desc   string

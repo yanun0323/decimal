@@ -3,7 +3,6 @@
 [![English](https://img.shields.io/badge/English-Click-yellow)](README.md)
 [![繁體中文](https://img.shields.io/badge/繁體中文-點擊查看-orange)](README-tw.md)
 [![简体中文](https://img.shields.io/badge/简体中文-点击查看-orange)](README-cn.md)
-[![日本語](https://img.shields.io/badge/日本語-クリック-青)](README-ja.md)
 
 基於字串型別的超高效率、記憶體優化十進制數字運算庫。
 
@@ -150,6 +149,9 @@ IsPositive/Decimal            14811858    79.3 ns/op    24 B/op    1 allocs/op
 
 IsNegative/ShopSpring          7227627   165.7 ns/op   200 B/op    7 allocs/op
 IsNegative/Decimal            24162208    48.6 ns/op    24 B/op    1 allocs/op
+
+Cmp/ShopSpring         	       3219708	 363.5 ns/op   424 B/op	  15 allocs/op
+Cmp/Decimal                    7908812	 150.7 ns/op    40 B/op	   2 allocs/op
 
 Equal/ShopSpring               3187255   359.3 ns/op   424 B/op   15 allocs/op
 Equal/Decimal                  8344328   141.0 ns/op    40 B/op    2 allocs/op
