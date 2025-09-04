@@ -13,9 +13,9 @@ import (
 
 const (
 	// DivisionPrecision is the number of decimal places for division operations.
-	DivisionPrecision = 16
-	zero              = Decimal("0")
-	_zero             = "0"
+	DivisionPrecision int     = 16
+	zero              Decimal = Decimal("0")
+	_zero                     = "0"
 )
 
 // Zero create a zero decimal

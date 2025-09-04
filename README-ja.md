@@ -24,6 +24,8 @@ import "github.com/yanun0323/decimal"
 - 精度損失のない加減算
 - Database/sql シリアライゼーション/デシリアライゼーション対応
 - JSON および XML の文字列形式でのシリアライゼーション/デシリアライゼーション対応
+- [shopspring/decimal](https://github.com/shopspring/decimal) API と完全互換 - すべての関数が同じインターフェースをサポートするよう実装
+- 差異や未実装の機能については、「[API の差異](README.md#api-differences)」セクションに記載
 
 ## サポート機能
 
@@ -179,3 +181,19 @@ Mul/Decimal                    3270048   364.3 ns/op   104 B/op    4 allocs/op
 Div/ShopSpring                 2890861   423.2 ns/op   464 B/op   17 allocs/op
 Div/Decimal                    1838936   644.4 ns/op   312 B/op   14 allocs/op
 ```
+
+# コントリビューション
+
+コントリビューションを歓迎します！ぜひ Pull Request を提出してください。大きな変更については、まず issue を開いて変更したい内容について議論してください。
+
+## 開発
+
+1. リポジトリをフォークする
+2. 機能ブランチを作成する (`git checkout -b feature/amazing-feature`)
+3. 変更をコミットする (`git commit -m 'Add some amazing feature'`)
+4. ブランチにプッシュする (`git push origin feature/amazing-feature`)
+5. Pull Request を開く
+
+## API の差異
+
+詳細な API の差異については [English README](README.md#api-differences) を参照してください。

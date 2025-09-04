@@ -24,6 +24,8 @@ import "github.com/yanun0323/decimal"
 - 加減法運算無精度損失
 - 支援 Database/sql 序列化/反序列化
 - 支援 JSON 和 XML 以字串形式序列化/反序列化
+- 完全相容 [shopspring/decimal](https://github.com/shopspring/decimal) API - 所有函數都實作為支援相同介面
+- 任何差異或未實作的功能都記錄在「[API 差異](README.md#api-differences)」章節中
 
 ## 支援功能
 
@@ -179,3 +181,19 @@ Mul/Decimal                    3270048   364.3 ns/op   104 B/op    4 allocs/op
 Div/ShopSpring                 2890861   423.2 ns/op   464 B/op   17 allocs/op
 Div/Decimal                    1838936   644.4 ns/op   312 B/op   14 allocs/op
 ```
+
+# 貢獻
+
+歡迎貢獻！請隨時提交 Pull Request。對於重大變更，請先開啟 issue 討論您想要變更的內容。
+
+## 開發
+
+1. Fork 此儲存庫
+2. 建立您的功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交您的變更 (`git commit -m 'Add some amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 開啟 Pull Request
+
+## API 差異
+
+詳細的 API 差異說明請參考 [English README](README.md#api-differences)。

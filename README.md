@@ -24,6 +24,8 @@ import "github.com/yanun0323/decimal"
 - Addition, subtraction with no loss of precision
 - Database/sql serialization/deserialization
 - JSON and XML serialization/deserialization as string
+- Fully compatible with [shopspring/decimal](https://github.com/shopspring/decimal) API - all functions are implemented to support the same interface
+- Any differences or unimplemented features are documented in the [API Differences](#api-differences) section below
 
 ## Supported
 
@@ -179,3 +181,101 @@ Mul/Decimal                    3270048   364.3 ns/op   104 B/op    4 allocs/op
 Div/ShopSpring                 2890861   423.2 ns/op   464 B/op   17 allocs/op
 Div/Decimal                    1838936   644.4 ns/op   312 B/op   14 allocs/op
 ```
+
+# Contribution
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+## Development
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## API Differences
+
+### Struct:
+
+- #### implemented:
+
+  - `NullDecimal`
+
+### Variables:
+
+- #### Implemented:
+
+  - `Zero` -> `Zero()`
+
+- #### Not implemented:
+
+  - `MarshalJSONWithoutQuotes`
+  - `ExpMaxIterations`
+
+### Functions:
+
+- #### Not implemented:
+
+  - `Sum`, `Avg`
+  - `Max`, `Min`
+  - `NewFromFloatWithExponent`
+  - `NewFromFormattedString`
+  - `NewNullDecimal`
+  - `RescalePair`
+
+### Methods:
+
+- #### Implemented:
+
+  - `Shift` parameter type `int32 -> int`
+  - `StringFixed` parameter type `int32 -> int`
+  - `Truncate` parameter type `int32 -> int`
+  - `Ceil` -> `Ceil(0)`
+  - `Floor` -> `Floor(0)`
+  - `GreaterThan` -> `Greater`
+  - `GreaterThanOrEqual` -> `GreaterOrEqual`
+  - `LessThan` -> `Less`
+  - `LessThanOrEqual` -> `LessOrEqual`
+  - `Copy` no need cause Decimal is a copyable value
+  - `Equals` -> `Equal`
+
+- #### TODO
+
+  - `Atan`
+  - `Cmp`
+  - `Cos`
+  - `IsInteger`
+  - `Mod`
+  - `Pow`
+  - `Sin`
+  - `Tan`
+
+- #### Not implemented:
+
+  - `BigFloat`
+  - `BigInt`
+  - `Coefficient`
+  - `CoefficientInt64`
+  - `DivRound`
+  - `ExpHullAbrham`
+  - `ExpTaylor`
+  - `Exponent`
+  - `Float64`
+  - `GobDecode`
+  - `GobEncode`
+  - `InexactFloat64`
+  - `IntPart`
+  - `NumDigits`
+  - `QuoRem`
+  - `Rat`
+  - `RoundCash`
+  - `StringFixedBank`
+  - `StringFixedCash`
+  - `StringScaled`
+  - `MarshalBinary`
+  - `MarshalJSON`
+  - `MarshalText`
+  - `UnmarshalBinary`
+  - `UnmarshalJSON`
+  - `UnmarshalText`
