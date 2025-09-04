@@ -5,50 +5,50 @@
 [![简体中文](https://img.shields.io/badge/简体中文-点击查看-orange)](README-cn.md)
 [![日本語](https://img.shields.io/badge/日本語-クリック-青)](README-ja.md)
 
-A super efficient, memory-optimized decimal library based on string type
+基於字串型別的超高效率、記憶體優化十進制數字運算庫。
 
-## Requirements
+## 系統需求
 
-#### _GO 1.21 or higher_
+#### _GO 1.21 或更高版本_
 
-## Import
+## 匯入
 
 ```go
 import "github.com/yanun0323/decimal"
 ```
 
-## Features
+## 特色功能
 
-- The zero-value is 0, and is safe to use without initialization
-- Memory-optimized with extremely low memory footprint while maintaining high performance
-- Addition, subtraction with no loss of precision
-- Database/sql serialization/deserialization
-- JSON and XML serialization/deserialization as string
+- 零值預設為 0，無需初始化即可安全使用
+- 記憶體優化，在維持高效能的同時擁有極低的記憶體佔用
+- 加減法運算無精度損失
+- 支援 Database/sql 序列化/反序列化
+- 支援 JSON 和 XML 以字串形式序列化/反序列化
 
-## Supported
+## 支援功能
 
-- Initialization like new from string, int, int32, float, float64, big.Int
-- Addition
-- Subtraction
-- Multiplication
-- Division
-- Negative
-- Truncate
-- Shift
-- Compare like equal, greater, less, greater or equal, less or equal
-- Round like round, ceil, floor, round bank, round away from zero, round toward to zero
+- 初始化：支援從字串、int、int32、float、float64、big.Int 建立
+- 加法運算
+- 減法運算
+- 乘法運算
+- 除法運算
+- 負數運算
+- 截斷
+- 位移
+- 比較：等於、大於、小於、大於等於、小於等於
+- 四捨五入：一般四捨五入、無條件進位、無條件捨去、銀行家四捨五入、遠離零值四捨五入、趨向零值四捨五入
 
-## Usage
+## 使用方法
 
 ```go
-// create decimal
+// 建立 decimal
 zero := decimal.Zero()
 
 d1, err := decimal.New("100,000.555")
 
 d2 := decimal.Require("50_000.05")
 
-// operation
+// 運算操作
 add := d1.Add(d2).String()
 println(add)            // 150000.605
 
@@ -73,7 +73,7 @@ println(abs)            // 150000.605
 truncate := d1.Truncate(1).String()
 println(truncate)       // 100000.5
 
-// compare
+// 比較運算
 d1.IsZero()             // false
 d1.IsPositive()         // true
 d1.IsNegative()         // true
@@ -85,20 +85,20 @@ d1.GreaterOrEqual(d2)   // true
 d1.LessOrEqual(d2)      // false
 
 
-// method chain
+// 方法鏈式呼叫
 result := d1.Sub(d2).Shift(-5).Add(d1).Truncate(3).String()
 ```
 
-## Benchmark
+## 效能基準測試
 
-Compare to [github.com/shopspring/decimal](https://github.com/shopspring/decimal)
+與 [github.com/shopspring/decimal](https://github.com/shopspring/decimal) 比較
 
-- **Overall Speed**: 1.9-6.5x faster across all operations
-- **Memory Efficiency**: 70-88% reduction in memory allocations
-- **Creation Operations**: New is 3x faster, NewFromFloat is 6.5x faster with significant memory savings
-- **Rounding Operations**: All rounding methods show 3-4x performance improvements with substantial memory reductions
+- **整體速度**：所有操作都快 1.9-6.5 倍
+- **記憶體效率**：記憶體配置減少 70-88%
+- **建立操作**：New 快 3 倍，NewFromFloat 快 6.5 倍，且大幅節省記憶體
+- **四捨五入操作**：所有四捨五入方法都顯示 3-4 倍的效能改進，並大幅減少記憶體使用
 
-The benchmarks demonstrate consistent performance advantages across creation, arithmetic, transformations, and comparisons while maintaining full API compatibility with shopspring/decimal.
+這些基準測試在保持與 shopspring/decimal 完全 API 相容性的同時，展現了在建立、算術、轉換和比較方面一致的效能優勢。
 
 ```
 New/ShopSpring                 6647031   166.4 ns/op   200 B/op    7 allocs/op

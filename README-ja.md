@@ -5,50 +5,50 @@
 [![简体中文](https://img.shields.io/badge/简体中文-点击查看-orange)](README-cn.md)
 [![日本語](https://img.shields.io/badge/日本語-クリック-青)](README-ja.md)
 
-A super efficient, memory-optimized decimal library based on string type
+文字列型をベースとした超高効率、メモリ最適化十進数演算ライブラリ。
 
-## Requirements
+## システム要件
 
-#### _GO 1.21 or higher_
+#### _GO 1.21 以上_
 
-## Import
+## インポート
 
 ```go
 import "github.com/yanun0323/decimal"
 ```
 
-## Features
+## 特徴
 
-- The zero-value is 0, and is safe to use without initialization
-- Memory-optimized with extremely low memory footprint while maintaining high performance
-- Addition, subtraction with no loss of precision
-- Database/sql serialization/deserialization
-- JSON and XML serialization/deserialization as string
+- ゼロ値のデフォルトは 0 で、初期化なしで安全に使用可能
+- メモリ最適化で、高パフォーマンスを維持しながら極めて低いメモリ使用量を実現
+- 精度損失のない加減算
+- Database/sql シリアライゼーション/デシリアライゼーション対応
+- JSON および XML の文字列形式でのシリアライゼーション/デシリアライゼーション対応
 
-## Supported
+## サポート機能
 
-- Initialization like new from string, int, int32, float, float64, big.Int
-- Addition
-- Subtraction
-- Multiplication
-- Division
-- Negative
-- Truncate
-- Shift
-- Compare like equal, greater, less, greater or equal, less or equal
-- Round like round, ceil, floor, round bank, round away from zero, round toward to zero
+- 初期化：文字列、int、int32、float、float64、big.Int からの作成をサポート
+- 加算
+- 減算
+- 乗算
+- 除算
+- 負数演算
+- 切り捨て
+- シフト
+- 比較：等価、より大きい、より小さい、以上、以下
+- 丸め：通常の四捨五入、切り上げ、切り捨て、銀行家の丸め、ゼロから遠ざかる丸め、ゼロに向かう丸め
 
-## Usage
+## 使用方法
 
 ```go
-// create decimal
+// decimal の作成
 zero := decimal.Zero()
 
 d1, err := decimal.New("100,000.555")
 
 d2 := decimal.Require("50_000.05")
 
-// operation
+// 演算操作
 add := d1.Add(d2).String()
 println(add)            // 150000.605
 
@@ -73,7 +73,7 @@ println(abs)            // 150000.605
 truncate := d1.Truncate(1).String()
 println(truncate)       // 100000.5
 
-// compare
+// 比較演算
 d1.IsZero()             // false
 d1.IsPositive()         // true
 d1.IsNegative()         // true
@@ -85,20 +85,20 @@ d1.GreaterOrEqual(d2)   // true
 d1.LessOrEqual(d2)      // false
 
 
-// method chain
+// メソッドチェーン呼び出し
 result := d1.Sub(d2).Shift(-5).Add(d1).Truncate(3).String()
 ```
 
-## Benchmark
+## ベンチマーク
 
-Compare to [github.com/shopspring/decimal](https://github.com/shopspring/decimal)
+[github.com/shopspring/decimal](https://github.com/shopspring/decimal) との比較
 
-- **Overall Speed**: 1.9-6.5x faster across all operations
-- **Memory Efficiency**: 70-88% reduction in memory allocations
-- **Creation Operations**: New is 3x faster, NewFromFloat is 6.5x faster with significant memory savings
-- **Rounding Operations**: All rounding methods show 3-4x performance improvements with substantial memory reductions
+- **全体的な速度**：すべての操作で 1.9-6.5 倍高速
+- **メモリ効率**：メモリ割り当てを 70-88% 削減
+- **作成操作**：New は 3 倍高速、NewFromFloat は 6.5 倍高速で大幅なメモリ節約
+- **丸め操作**：すべての丸めメソッドで 3-4 倍のパフォーマンス向上と大幅なメモリ削減を実現
 
-The benchmarks demonstrate consistent performance advantages across creation, arithmetic, transformations, and comparisons while maintaining full API compatibility with shopspring/decimal.
+これらのベンチマークは、shopspring/decimal との完全な API 互換性を保ちながら、作成、算術、変換、比較において一貫したパフォーマンス上の優位性を実証しています。
 
 ```
 New/ShopSpring                 6647031   166.4 ns/op   200 B/op    7 allocs/op
