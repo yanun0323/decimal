@@ -196,86 +196,92 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ## API Differences
 
-### Struct:
+### In Development
 
-- #### implemented:
+```makefile
+Method:
+  Atan()
+  Cmp()
+  Cos()
+  IsInteger()
+  Mod()
+  Pow()
+  Sin()
+  Tan()
+```
 
-  - `NullDecimal`
+### Alternatives:
 
-### Variables:
+```makefile
+Variables:
+  Zero -> Zero()
 
-- #### Implemented:
+Method:
+  Copy()            no need, Decimal is already a copyable structure (string)
+  MarshalJSON()     no need, Decimal is already a marshallable structure (string)
+  UnmarshalJSON()   no need, Decimal is already a Unmarshallable structure (string)
 
-  - `Zero` -> `Zero()`
+  Round()           parameter type `int32 -> int`
+  Shift()           parameter type `int32 -> int`
+  StringFixed()     parameter type `int32 -> int`
+  Truncate()        parameter type `int32 -> int`
 
-- #### Not implemented:
+  GreaterThan()         ->  Greater
+  GreaterThanOrEqual()  ->  GreaterOrEqual
+  LessThan()            ->  Less
+  LessThanOrEqual()     ->  LessOrEqual
+  Equals()              ->  Equal
+  RoundUp()             ->  RoundAwayFromZero
+  RoundDown()           ->  RoundTowardToZero
+  RoundFloor()          ->  Floor
+  RoundCeil()           ->  Ceil
+  Ceil()                ->  Ceil(0)
+  Floor()               ->  Floor(0)
+```
 
-  - `MarshalJSONWithoutQuotes`
-  - `ExpMaxIterations`
+### Unimplemented:
 
-### Functions:
+```makefile
+Struct:
+  NullDecimal
 
-- #### Not implemented:
+Variables:
+  MarshalJSONWithoutQuotes
+  ExpMaxIterations
 
-  - `Sum`, `Avg`
-  - `Max`, `Min`
-  - `NewFromFloatWithExponent`
-  - `NewFromFormattedString`
-  - `NewNullDecimal`
-  - `RescalePair`
+Function:
+  Sum
+  Avg
+  Max
+  Min
+  NewFromFloatWithExponent
+  NewFromFormattedString
+  NewNullDecimal
+  RescalePair
 
-### Methods:
-
-- #### Implemented:
-
-  - `Shift` parameter type `int32 -> int`
-  - `StringFixed` parameter type `int32 -> int`
-  - `Truncate` parameter type `int32 -> int`
-  - `Ceil` -> `Ceil(0)`
-  - `Floor` -> `Floor(0)`
-  - `GreaterThan` -> `Greater`
-  - `GreaterThanOrEqual` -> `GreaterOrEqual`
-  - `LessThan` -> `Less`
-  - `LessThanOrEqual` -> `LessOrEqual`
-  - `Copy` no need cause Decimal is a copyable value
-  - `Equals` -> `Equal`
-
-- #### TODO
-
-  - `Atan`
-  - `Cmp`
-  - `Cos`
-  - `IsInteger`
-  - `Mod`
-  - `Pow`
-  - `Sin`
-  - `Tan`
-
-- #### Not implemented:
-
-  - `BigFloat`
-  - `BigInt`
-  - `Coefficient`
-  - `CoefficientInt64`
-  - `DivRound`
-  - `ExpHullAbrham`
-  - `ExpTaylor`
-  - `Exponent`
-  - `Float64`
-  - `GobDecode`
-  - `GobEncode`
-  - `InexactFloat64`
-  - `IntPart`
-  - `NumDigits`
-  - `QuoRem`
-  - `Rat`
-  - `RoundCash`
-  - `StringFixedBank`
-  - `StringFixedCash`
-  - `StringScaled`
-  - `MarshalBinary`
-  - `MarshalJSON`
-  - `MarshalText`
-  - `UnmarshalBinary`
-  - `UnmarshalJSON`
-  - `UnmarshalText`
+Method:
+  BigFloat
+  BigInt
+  Coefficient
+  CoefficientInt64
+  DivRound
+  ExpHullAbrham
+  ExpTaylor
+  Exponent
+  Float64
+  GobDecode
+  GobEncode
+  InexactFloat64
+  IntPart
+  NumDigits
+  QuoRem
+  Rat
+  RoundCash
+  StringFixedBank
+  StringFixedCash
+  StringScaled
+  MarshalBinary
+  MarshalText
+  UnmarshalBinary
+  UnmarshalText
+```
