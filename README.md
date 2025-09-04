@@ -196,6 +196,8 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 ## API Differences
 
+This section outlines the differences between our decimal implementation and the shopspring/decimal library. We've made several design decisions to improve performance, simplify the API, and provide more intuitive method names.
+
 ### In Development
 
 ```makefile
