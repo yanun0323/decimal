@@ -778,7 +778,7 @@ func roundInConditionWithoutSign(buf []byte, places int, isDecimalNeg bool, carr
 		)
 		// Round to integer
 		if dotIdx == 0 {
-			needCarry = dotIdx+1 < len(buf) && carryCond(isDecimalNeg, '0', buf[dotIdx+1])
+			needCarry = dotIdx+1 < len(buf) && carryCond(isDecimalNeg, '1', buf[dotIdx+1])
 			result = buf[:dotIdx]
 		} else {
 			needCarry = dotIdx+1 < len(buf) && carryCond(isDecimalNeg, buf[dotIdx-1], buf[dotIdx+1])
