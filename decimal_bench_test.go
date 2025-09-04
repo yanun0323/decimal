@@ -371,6 +371,23 @@ func BenchmarkIsZero(b *testing.B) {
 	)
 }
 
+func BenchmarkIsInteger(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				_ = d1.IsInteger()
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				_ = d1.IsInteger()
+			}
+		},
+	)
+}
+
 func BenchmarkIsPositive(b *testing.B) {
 	Run(b,
 		func(b *testing.B) {

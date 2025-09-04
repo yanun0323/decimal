@@ -144,6 +144,9 @@ Shift/Decimal                  6324964   187.4 ns/op    88 B/op    4 allocs/op
 IsZero/ShopSpring              7049337   163.5 ns/op   200 B/op    7 allocs/op
 IsZero/Decimal                15329292    77.6 ns/op    24 B/op    1 allocs/op
 
+IsInteger/ShopSpring           6387838	 164.1 ns/op   200 B/op	   7 allocs/op
+IsInteger/Decimal             14660770	 82.99 ns/op    24 B/op	   1 allocs/op
+
 IsPositive/ShopSpring          7241178   163.7 ns/op   200 B/op    7 allocs/op
 IsPositive/Decimal            14811858    79.3 ns/op    24 B/op    1 allocs/op
 

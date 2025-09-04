@@ -405,6 +405,27 @@ func (d Decimal) IsZero() bool {
 	return isZero(normalize([]byte(d)))
 }
 
+// IsInteger returns true when decimal can be represented as an integer value, otherwise, it returns false.
+func (d Decimal) IsInteger() bool {
+	if len(d) == 0 {
+		return true
+	}
+
+	buf := normalize([]byte(d))
+	dotIdx := findDotIndex(buf)
+	if dotIdx == -1 {
+		return true
+	}
+
+	for ; dotIdx < len(buf); dotIdx++ {
+		if buf[dotIdx] != '0' {
+			return false
+		}
+	}
+
+	return true
+}
+
 // IsPositive return d > 0
 func (d Decimal) IsPositive() bool {
 	buf := normalize([]byte(d))

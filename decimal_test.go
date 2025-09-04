@@ -1040,6 +1040,74 @@ func (su *DecimalSuite) TestIsZero() {
 	}
 }
 
+func (su *DecimalSuite) TestIsInteger() {
+	testCases := []struct {
+		desc     string
+		d        Decimal
+		expected bool
+	}{
+		{
+			d:        "0",
+			expected: true,
+		},
+		{
+			d:        "0.0",
+			expected: true,
+		},
+		{
+			d:        "00.0000",
+			expected: true,
+		},
+		{
+			d:        ".0",
+			expected: true,
+		},
+		{
+			d:        ".0",
+			expected: true,
+		},
+		{
+			d:        "",
+			expected: true,
+		},
+		{
+			d:        "123",
+			expected: true,
+		},
+		{
+			d:        "-123",
+			expected: true,
+		},
+		{
+			d:        "-0",
+			expected: true,
+		},
+		{
+			d:        "123.000",
+			expected: true,
+		},
+		{
+			d:        "-123.000",
+			expected: true,
+		},
+		{
+			d:        "123.0001",
+			expected: false,
+		},
+		{
+			d:        "-123.0001",
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.expected, tc.d.IsInteger())
+		})
+	}
+}
+
 func (su *DecimalSuite) TestIsPositive() {
 	testCases := []struct {
 		desc     string
