@@ -4,11 +4,20 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 var (
 	zeroBytes = []byte{'0'}
+	oneBytes  = []byte{'1'}
+	twoBytes  = []byte{'2'}
 )
+
+func copyBytes(src []byte) []byte {
+	dst := make([]byte, len(src))
+	copy(dst, src)
+	return dst
+}
 
 // quickCheckZero returns true when the given byte slice represents a
 // variety of textual zero values ("0", "00", "+0", "-0", ".0", "0." …).
@@ -690,4 +699,28 @@ func less(a, b []byte) bool {
 	}
 
 	return false
+}
+
+func intPart(buf []byte) []byte {
+	dotIdx := findDotIndex(buf)
+	if dotIdx != -1 {
+		return buf[:dotIdx]
+	}
+
+	return buf
+}
+
+func intPartInt64(buf []byte) int64 {
+	result := string(intPart(buf))
+	switch result {
+	case "", "-":
+		return 0
+	default:
+		i, err := strconv.ParseInt(result, 10, 64)
+		if err != nil {
+			panic(fmt.Errorf("intPart: parse int (%s), err: %w", result, err))
+		}
+
+		return i
+	}
 }

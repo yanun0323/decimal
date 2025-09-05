@@ -988,6 +988,94 @@ func (su *DecimalSuite) TestJsonSupport() {
 	su.Equal("123456.123456", dd.String())
 }
 
+func (su *DecimalSuite) TestPow() {
+	testCases := []struct {
+		desc     string
+		d, d2    Decimal
+		expected string
+	}{
+		{"16^0", "16", "0", "1"},
+		{"1^1", "1", "1", "1"},
+		{"4^2", "4", "2", "16"},
+		{"2^10", "2", "10", "1024"},
+		{"2^-10", "2", "-10", "0.0009765625"},
+		{"2^-10", "2", "-10", "0.0009765625"},
+		{"2^100", "2", "100", "1267650600228229401496703205376"},
+		{"12^11", "12", "11", "743008370688"},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.expected, tc.d.Pow(tc.d2).String(), tc.desc)
+		})
+	}
+}
+
+func (su *DecimalSuite) TestIntPart() {
+	testCases := []struct {
+		desc     string
+		d        Decimal
+		expected int64
+	}{
+		{
+			d:        "0",
+			expected: 0,
+		},
+		{
+			d:        "0.0",
+			expected: 0,
+		},
+		{
+			d:        "00.0000",
+			expected: 0,
+		},
+		{
+			d:        ".0",
+			expected: 0,
+		},
+		{
+			d:        ".0",
+			expected: 0,
+		},
+		{
+			d:        "",
+			expected: 0,
+		},
+		{
+			d:        "123",
+			expected: 123,
+		},
+		{
+			d:        "-123",
+			expected: -123,
+		},
+		{
+			d:        "123.000",
+			expected: 123,
+		},
+		{
+			d:        "-123.000",
+			expected: -123,
+		},
+		{
+			d:        "123.56789",
+			expected: 123,
+		},
+		{
+			d:        "-123.56789",
+			expected: -123,
+		},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			su.Equal(tc.expected, tc.d.IntPart())
+		})
+	}
+}
+
 func (su *DecimalSuite) TestIsZero() {
 	testCases := []struct {
 		desc     string
@@ -1749,11 +1837,22 @@ func (su *DecimalSuite) TestLessOrEqual() {
 }
 
 func (su *DecimalSuite) TestMultiplyPureNumber() {
-	d1 := []byte("12345")
-	d2 := []byte("5648935")
+	testCases := []struct {
+		desc     string
+		d1, d2   string
+		expected string
+	}{
+		{"Normal", "12345", "5648935", "69736102575"},
+		{"Digit", "25", "25", "625"},
+	}
 
-	result := string(multiplyPureNumber(d1, d2))
-	su.Equal("069736102575", result)
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			t.Log(tc.desc)
+			result := string(multiplyPureNumber([]byte(tc.d1), []byte(tc.d2)))
+			su.Equal(tc.expected, result, "%s * %s = %s", tc.d1, tc.d2, tc.expected)
+		})
+	}
 }
 
 func (su *DecimalSuite) TestRemoveDecimalPoint() {

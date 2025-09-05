@@ -97,12 +97,19 @@ func remove(slice []byte, idx int) []byte {
 // extend extends the slice to the target capacity
 //
 // NOTE: COPY WHEN CAPACITY NOT ENOUGH
-func extend(slice []byte, targetCap int) []byte {
+func extend(slice []byte, targetCap int, fillToCap ...bool) []byte {
 	if cap(slice) >= targetCap {
 		return slice
 	}
 
-	return append(make([]byte, 0, targetCap), slice...)
+	result := append(make([]byte, 0, targetCap), slice...)
+	if len(fillToCap) != 0 && fillToCap[0] {
+		for len(result) < targetCap {
+			result = append(result, 0)
+		}
+	}
+
+	return result
 }
 
 // insert inserts the value at the given index and returns the slice with the value.

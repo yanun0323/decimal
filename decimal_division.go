@@ -19,15 +19,16 @@ import (
 //	The scaled integer is then shifted back by DivisionPrecision using the
 //	existing shift helper.
 func (d Decimal) Div(d2 Decimal) Decimal {
-	// Normalize inputs
-	a := normalize([]byte(d))
-	b := normalize([]byte(d2))
+	return Decimal(div(normalize([]byte(d)), normalize([]byte(d2))))
+}
 
+func div(a, b []byte) []byte {
 	if isZero(b) {
 		panic("division by zero")
 	}
+
 	if isZero(a) {
-		return Zero
+		return zeroBytes
 	}
 
 	// Remove decimal point to get pure integer representations
@@ -60,12 +61,7 @@ func (d Decimal) Div(d2 Decimal) Decimal {
 		scaled.Div(&scaled, &denom)
 	}
 
-	// Convert back to []byte and insert decimal point
-	buf := []byte(scaled.String())
-	buf = shift(buf, -DivisionPrecision)
-
-	// tidy will remove unnecessary leading/trailing zeros and dots
-	return tidy(buf)
+	return tidyBytes(shift([]byte(scaled.String()), -DivisionPrecision))
 }
 
 // ------------------------- helper -------------------------

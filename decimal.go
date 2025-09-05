@@ -3,6 +3,7 @@ package decimal
 import (
 	"math"
 	"math/big"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -16,6 +17,8 @@ const (
 	Zero Decimal = Decimal("0")
 
 	_zero = "0"
+	_one  = "1"
+	_two  = "2"
 )
 
 // New create a Decimal. If value is empty, return zero.
@@ -396,6 +399,64 @@ func max(a, b int) int {
 	return b
 }
 
+// Pow returns d to the power d2
+func (d Decimal) Pow(d2 Decimal) Decimal {
+	cache := make([]byte, 0, len(d)*len(d2))
+	return Decimal(pow(normalize([]byte(d)), normalize([]byte(d2)), &cache))
+}
+
+func pow(a, b []byte, reused ...*[]byte) []byte {
+	bIntPart := intPartInt64(b)
+	if bIntPart == 0 {
+		return oneBytes
+	}
+
+	temp := pow(a, div(b, twoBytes), reused...)
+	if bIntPart%2 == 0 {
+		return sqr(temp, reused...)
+	}
+
+	if bIntPart > 0 {
+		return mul(sqr(temp, reused...), a, reused...)
+	}
+
+	return div(sqr(temp, reused...), a)
+}
+
+// Rat returns a rational number representation of the decimal.
+func (d Decimal) Rat() *big.Rat {
+	r := new(big.Rat)
+	r.SetString(d.String())
+	return r
+}
+
+// BigFloat returns decimal as BigFloat.
+// Be aware that casting decimal to BigFloat might cause a loss of precision.
+func (d Decimal) BigFloat() *big.Float {
+	f := new(big.Float)
+	f.SetString(d.String())
+	return f
+}
+
+// BigInt returns integer component of the decimal as a BigInt.
+func (d Decimal) BigInt() *big.Int {
+	i := new(big.Int)
+	i.SetString(string(intPart(normalize([]byte(d)))), 10)
+	return i
+}
+
+// Float64 returns the nearest float64 value for d and a bool indicating
+// whether f represents d exactly.
+// For more details, see the documentation for big.Rat.Float64
+func (d Decimal) Float64() (f float64, exact bool) {
+	return d.Rat().Float64()
+}
+
+// IntPart returns the integer component of the decimal.
+func (d Decimal) IntPart() int64 {
+	return intPartInt64(normalize([]byte(d)))
+}
+
 // IsZero return d == 0
 func (d Decimal) IsZero() bool {
 	if len(d) == 0 {
@@ -485,28 +546,40 @@ func (d Decimal) LessOrEqual(d2 Decimal) bool {
 
 // Mul return d * d2
 func (d Decimal) Mul(d2 Decimal) Decimal {
-	a := normalize([]byte(d))
-	b := normalize([]byte(d2))
+	return Decimal(mul(normalize([]byte(d)), normalize([]byte(d2))))
+}
 
+func sqr(a []byte, reused ...*[]byte) []byte {
+	if isZero(a) {
+		return zeroBytes
+	}
+
+	a, right := removeDecimalPoint(a)
+
+	multiplied := multiplyPureNumber(a, a, reused...)
+	rightSumDigit := right + right
+	if rightSumDigit != 0 {
+		if len(multiplied) <= rightSumDigit {
+			multiplied = pushFrontRepeat(multiplied, '0', rightSumDigit-len(multiplied)+1)
+		}
+		digitIdx := len(multiplied) - rightSumDigit
+		multiplied = insert(multiplied, digitIdx, '.')
+	}
+
+	return multiplied
+}
+
+func mul(a, b []byte, reused ...*[]byte) []byte {
 	if isZero(a) || isZero(b) {
-		return Zero
+		return zeroBytes
 	}
 
-	right1 := findDotIndex(a)
-	if right1 == -1 {
-		right1 = 0
-	} else {
-		a = remove(a, right1)
-		right1 = len(a) - right1
+	if reflect.ValueOf(a).Pointer() == reflect.ValueOf(b).Pointer() {
+		return sqr(a, reused...)
 	}
 
-	right2 := findDotIndex(b)
-	if right2 == -1 {
-		right2 = 0
-	} else {
-		b = remove(b, right2)
-		right2 = len(b) - right2
-	}
+	a, right1 := removeDecimalPoint(a)
+	b, right2 := removeDecimalPoint(b)
 
 	minus := false
 	if a[0] == '-' {
@@ -519,25 +592,21 @@ func (d Decimal) Mul(d2 Decimal) Decimal {
 		minus = !minus
 	}
 
-	// 200ns
-	multiplied := multiplyPureNumber(a, b)
-	idx := right1 + right2
-	if idx == 0 {
-		if minus {
-			return "-" + Decimal(multiplied)
+	multiplied := multiplyPureNumber(a, b, reused...)
+	rightSumDigit := right1 + right2
+	if rightSumDigit != 0 {
+		if len(multiplied) <= rightSumDigit {
+			multiplied = pushFrontRepeat(multiplied, '0', rightSumDigit-len(multiplied)+1)
 		}
-
-		return Decimal(multiplied)
+		digitIdx := len(multiplied) - rightSumDigit
+		multiplied = insert(multiplied, digitIdx, '.')
 	}
-
-	idx = len(multiplied) - idx
-	multiplied = insert(multiplied, idx, '.')
 
 	if minus {
-		return "-" + Decimal(multiplied)
+		multiplied = pushFront(multiplied, '-')
 	}
 
-	return Decimal(multiplied)
+	return multiplied
 }
 
 // removeDecimalPoint removes decimal point and return the count of the digit right the decimal
@@ -553,20 +622,37 @@ func removeDecimalPoint(s []byte) (result []byte, countOfRightSide int) {
 }
 
 // multiplyPureNumber return d1 * d2, d1 & d2 must contain only number 0~9
-func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
+func multiplyPureNumber(d1 []byte, d2 []byte, reused ...*[]byte) []byte {
 	if len(d1) < len(d2) {
 		d1, d2 = d2, d1
 	}
 
 	var (
-		extraCap   = 2
+		extraCap   = 3 // for outside this func to append '-0.'
 		len1, len2 = len(d1), len(d2)
-		result     = make([]byte, len1+len2+extraCap)
+		resultCap  = len1 + len2 + extraCap
+		isReused   = len(reused) != 0
 		resultIdx  int
 		carry      byte
 		val1, val2 byte
 		prod       byte
+		result     []byte // make([]byte, len1+len2+extraCap)
 	)
+
+	if isReused {
+		result = extend(*reused[0], resultCap)
+		for i := range result {
+			result[i] = 0
+		}
+
+		for len(result) < resultCap {
+			result = append(result, 0)
+		}
+
+		result = result[:resultCap]
+	} else {
+		result = make([]byte, resultCap)
+	}
 
 	// Optimized multiplication using single loop with carry propagation
 	for i := len2 - 1; i >= 0; i-- {
@@ -598,7 +684,7 @@ func multiplyPureNumber(d1 []byte, d2 []byte) []byte {
 		result[i] += '0'
 	}
 
-	return trimBack(result, extraCap)
+	return tidyBytes(trimBack(result, extraCap))
 }
 
 // Sign return the sign of the decimal

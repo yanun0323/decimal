@@ -141,6 +141,9 @@ Floor/Decimal                  6430852   187.6 ns/op    72 B/op    3 allocs/op
 Shift/ShopSpring               2355440   502.0 ns/op   608 B/op   22 allocs/op
 Shift/Decimal                  6324964   187.4 ns/op    88 B/op    4 allocs/op
 
+IntPart/ShopSpring         	   5684866   197.9 ns/op	 264 B/op	   9 allocs/op
+IntPart/Decimal               12530052	  96.62 ns/op	  24 B/op	   1 allocs/op
+
 IsZero/ShopSpring              7049337   163.5 ns/op   200 B/op    7 allocs/op
 IsZero/Decimal                15329292    77.6 ns/op    24 B/op    1 allocs/op
 
@@ -207,12 +210,7 @@ This section outlines the differences between our decimal implementation and the
 
 ```makefile
 Method:
-  Atan()
-  Cos()
   Mod()
-  Pow()
-  Sin()
-  Tan()
 ```
 
 ### Alternatives:
@@ -262,26 +260,25 @@ Function:
   RescalePair
 
 Method:
-  BigFloat
-  BigInt
+  Atan
   Coefficient
   CoefficientInt64
+  Cos
   DivRound
   ExpHullAbrham
   ExpTaylor
   Exponent
-  Float64
   GobDecode
   GobEncode
   InexactFloat64
-  IntPart
   NumDigits
   QuoRem
-  Rat
   RoundCash
+  Sin
   StringFixedBank
   StringFixedCash
   StringScaled
+  Tan
   MarshalBinary
   MarshalText
   UnmarshalBinary

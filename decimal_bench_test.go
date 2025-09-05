@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	_operatorBase     = "12,345,789.00456888"
+	_operatorBase     = "12,789.00456888"
 	_operatorAddition = "789.00456888"
 )
 
@@ -354,6 +354,23 @@ func BenchmarkSub(b *testing.B) {
 	)
 }
 
+func BenchmarkIntPart(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				_ = d1.IntPart()
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				_ = d1.IntPart()
+			}
+		},
+	)
+}
+
 func BenchmarkIsZero(b *testing.B) {
 	Run(b,
 		func(b *testing.B) {
@@ -550,6 +567,25 @@ func BenchmarkSign(b *testing.B) {
 				d1, _ := New(_operatorBase)
 				s := d1.Sign()
 				_ = s + 2
+			}
+		},
+	)
+}
+
+func BenchmarkPow(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				d2, _ := decimal.NewFromString(_operatorAddition)
+				_ = d1.Pow(d2)
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				d2, _ := New(_operatorAddition)
+				_ = d1.Pow(d2)
 			}
 		},
 	)
