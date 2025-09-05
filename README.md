@@ -130,10 +130,6 @@ Truncate:
 ShopSpring           2883730   438.9 ns/op   530 B/op   20 allocs/op
 Decimal              6978840   173.6 ns/op    72 B/op    3 allocs/op
 
-Ceil:
-ShopSpring           1833598   693.9 ns/op   872 B/op   30 allocs/op
-Decimal              5914952   201.3 ns/op    88 B/op    4 allocs/op
-
 Round:
 ShopSpring           1446426   860.9 ns/op   920 B/op   34 allocs/op
 Decimal              6058872   188.5 ns/op    72 B/op    3 allocs/op
@@ -145,6 +141,10 @@ Decimal              6073666   195.0 ns/op    88 B/op    4 allocs/op
 RoundTowardToZero:
 ShopSpring           1839658   653.7 ns/op   872 B/op   30 allocs/op
 Decimal              6925075   171.9 ns/op    72 B/op    3 allocs/op
+
+Ceil:
+ShopSpring           1833598   693.9 ns/op   872 B/op   30 allocs/op
+Decimal              5914952   201.3 ns/op    88 B/op    4 allocs/op
 
 Floor:
 ShopSpring           1848147   644.8 ns/op   872 B/op   30 allocs/op
@@ -259,17 +259,17 @@ Method:
   StringFixed()     parameter type `int32 -> int`
   Truncate()        parameter type `int32 -> int`
 
-  GreaterThan()         ->  Greater
-  GreaterThanOrEqual()  ->  GreaterOrEqual
-  LessThan()            ->  Less
-  LessThanOrEqual()     ->  LessOrEqual
-  Equals()              ->  Equal
-  RoundUp()             ->  RoundAwayFromZero
-  RoundDown()           ->  RoundTowardToZero
-  RoundFloor()          ->  Floor
-  RoundCeil()           ->  Ceil
-  Ceil()                ->  Ceil(0)
-  Floor()               ->  Floor(0)
+  GreaterThan()         ->  use Greater
+  GreaterThanOrEqual()  ->  use GreaterOrEqual
+  LessThan()            ->  use Less
+  LessThanOrEqual()     ->  use LessOrEqual
+  Equals()              ->  use Equal
+  RoundUp()             ->  use RoundAwayFromZero
+  RoundDown()           ->  use RoundTowardToZero
+  RoundCeil()           ->  use Ceil
+  RoundFloor()          ->  use Floor
+  Ceil()                ->  use Ceil(0)
+  Floor()               ->  use Floor(0)
 ```
 
 ### Unimplemented:
