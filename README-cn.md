@@ -101,6 +101,8 @@ result := d1.Sub(d2).Shift(-5).Add(d1).Truncate(3).String()
 
 这些基准测试在保持与 shopspring/decimal 完全 API 兼容性的同时，展现了在创建、算术、转换和比较方面一致的性能优势。
 
+
+
 ```
 New/ShopSpring                 6647031   166.4 ns/op   200 B/op    7 allocs/op
 New/Decimal                   23945144   55.54 ns/op    24 B/op    1 allocs/op
@@ -141,11 +143,14 @@ Floor/Decimal                  6430852   187.6 ns/op    72 B/op    3 allocs/op
 Shift/ShopSpring               2355440   502.0 ns/op   608 B/op   22 allocs/op
 Shift/Decimal                  6324964   187.4 ns/op    88 B/op    4 allocs/op
 
+IntPart/ShopSpring         	   5684866   197.9 ns/op	 264 B/op	   9 allocs/op
+IntPart/Decimal               12530052	  96.62 ns/op	  24 B/op	   1 allocs/op
+
 IsZero/ShopSpring              7049337   163.5 ns/op   200 B/op    7 allocs/op
 IsZero/Decimal                15329292    77.6 ns/op    24 B/op    1 allocs/op
 
-IsInteger/ShopSpring           6387838	 164.1 ns/op   200 B/op	   7 allocs/op
-IsInteger/Decimal             14660770	 82.99 ns/op    24 B/op	   1 allocs/op
+IsInteger/ShopSpring         	 6387838	 164.1 ns/op	 200 B/op	   7 allocs/op
+IsInteger/Decimal           	14660770	 82.99 ns/op	  24 B/op	   1 allocs/op
 
 IsPositive/ShopSpring          7241178   163.7 ns/op   200 B/op    7 allocs/op
 IsPositive/Decimal            14811858    79.3 ns/op    24 B/op    1 allocs/op
@@ -153,8 +158,8 @@ IsPositive/Decimal            14811858    79.3 ns/op    24 B/op    1 allocs/op
 IsNegative/ShopSpring          7227627   165.7 ns/op   200 B/op    7 allocs/op
 IsNegative/Decimal            24162208    48.6 ns/op    24 B/op    1 allocs/op
 
-Cmp/ShopSpring         	       3219708	 363.5 ns/op   424 B/op	  15 allocs/op
-Cmp/Decimal                    7908812	 150.7 ns/op    40 B/op	   2 allocs/op
+Cmp/ShopSpring         	       3219708	 363.5 ns/op	 424 B/op	  15 allocs/op
+Cmp/Decimal                    7908812	 150.7 ns/op	  40 B/op	   2 allocs/op
 
 Equal/ShopSpring               3187255   359.3 ns/op   424 B/op   15 allocs/op
 Equal/Decimal                  8344328   141.0 ns/op    40 B/op    2 allocs/op
@@ -173,6 +178,9 @@ LessOrEqual/Decimal            8175444   147.0 ns/op    40 B/op    2 allocs/op
 
 Sign/ShopSpring                7318190   162.8 ns/op   200 B/op    7 allocs/op
 Sign/Decimal                  15136862    79.6 ns/op    24 B/op    1 allocs/op
+
+Pow/ShopSpring                  170517    6856 ns/op  6653 B/op  261 allocs/op
+Pow/Decimal                     224826    5283 ns/op  2376 B/op  106 allocs/op
 
 Add/ShopSpring                 1877947   646.3 ns/op   728 B/op   28 allocs/op
 Add/Decimal                    3236866   366.2 ns/op   136 B/op    6 allocs/op

@@ -177,6 +177,9 @@ LessOrEqual/Decimal            8175444   147.0 ns/op    40 B/op    2 allocs/op
 Sign/ShopSpring                7318190   162.8 ns/op   200 B/op    7 allocs/op
 Sign/Decimal                  15136862    79.6 ns/op    24 B/op    1 allocs/op
 
+Pow/ShopSpring                  170517    6856 ns/op  6653 B/op  261 allocs/op
+Pow/Decimal                     224826    5283 ns/op  2376 B/op  106 allocs/op
+
 Add/ShopSpring                 1877947   646.3 ns/op   728 B/op   28 allocs/op
 Add/Decimal                    3236866   366.2 ns/op   136 B/op    6 allocs/op
 
