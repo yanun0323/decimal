@@ -17,8 +17,6 @@ const (
 	Zero Decimal = Decimal("0")
 
 	_zero = "0"
-	_one  = "1"
-	_two  = "2"
 )
 
 // New create a Decimal. If value is empty, return zero.
