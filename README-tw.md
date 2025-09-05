@@ -141,14 +141,14 @@ Floor/Decimal                  6430852   187.6 ns/op    72 B/op    3 allocs/op
 Shift/ShopSpring               2355440   502.0 ns/op   608 B/op   22 allocs/op
 Shift/Decimal                  6324964   187.4 ns/op    88 B/op    4 allocs/op
 
-IntPart/ShopSpring         	   5684866   197.9 ns/op	 264 B/op	   9 allocs/op
-IntPart/Decimal               12530052	  96.62 ns/op	  24 B/op	   1 allocs/op
+IntPart/ShopSpring             5684866   197.9 ns/op   264 B/op    9 allocs/op
+IntPart/Decimal               12530052   96.62 ns/op    24 B/op    1 allocs/op
 
 IsZero/ShopSpring              7049337   163.5 ns/op   200 B/op    7 allocs/op
 IsZero/Decimal                15329292    77.6 ns/op    24 B/op    1 allocs/op
 
-IsInteger/ShopSpring         	 6387838	 164.1 ns/op	 200 B/op	   7 allocs/op
-IsInteger/Decimal           	14660770	 82.99 ns/op	  24 B/op	   1 allocs/op
+IsInteger/ShopSpring           6387838   164.1 ns/op   200 B/op    7 allocs/op
+IsInteger/Decimal             14660770   82.99 ns/op    24 B/op    1 allocs/op
 
 IsPositive/ShopSpring          7241178   163.7 ns/op   200 B/op    7 allocs/op
 IsPositive/Decimal            14811858    79.3 ns/op    24 B/op    1 allocs/op
@@ -156,8 +156,8 @@ IsPositive/Decimal            14811858    79.3 ns/op    24 B/op    1 allocs/op
 IsNegative/ShopSpring          7227627   165.7 ns/op   200 B/op    7 allocs/op
 IsNegative/Decimal            24162208    48.6 ns/op    24 B/op    1 allocs/op
 
-Cmp/ShopSpring         	       3219708	 363.5 ns/op	 424 B/op	  15 allocs/op
-Cmp/Decimal                    7908812	 150.7 ns/op	  40 B/op	   2 allocs/op
+Cmp/ShopSpring                 3219708   363.5 ns/op   424 B/op   15 allocs/op
+Cmp/Decimal                    7908812   150.7 ns/op    40 B/op    2 allocs/op
 
 Equal/ShopSpring               3187255   359.3 ns/op   424 B/op   15 allocs/op
 Equal/Decimal                  8344328   141.0 ns/op    40 B/op    2 allocs/op
