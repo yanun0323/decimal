@@ -3,7 +3,6 @@ package decimal
 import (
 	"math"
 	"math/big"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -570,10 +569,6 @@ func sqr(a []byte, reused ...*[]byte) []byte {
 func mul(a, b []byte, reused ...*[]byte) []byte {
 	if isZero(a) || isZero(b) {
 		return zeroBytes
-	}
-
-	if reflect.ValueOf(a).Pointer() == reflect.ValueOf(b).Pointer() {
-		return sqr(a, reused...)
 	}
 
 	a, right1 := removeDecimalPoint(a)

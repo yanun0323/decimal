@@ -203,8 +203,8 @@ ShopSpring           7318190   162.8 ns/op   200 B/op    7 allocs/op
 Decimal             15136862    79.6 ns/op    24 B/op    1 allocs/op
 
 Pow:
-ShopSpring            170517    6856 ns/op  6653 B/op  261 allocs/op
-Decimal               224826    5283 ns/op  2376 B/op  106 allocs/op
+ShopSpring            206235    5883 ns/op  6653 B/op  261 allocs/op
+Decimal               240930    5063 ns/op  2312 B/op  103 allocs/op
 
 Add:
 ShopSpring           1877947   646.3 ns/op   728 B/op   28 allocs/op
@@ -216,7 +216,7 @@ Decimal              3426580   356.9 ns/op   120 B/op    6 allocs/op
 
 Mul:
 ShopSpring           4171518   281.8 ns/op   296 B/op   12 allocs/op
-Decimal              3270048   364.3 ns/op   176 B/op    8 allocs/op
+Decimal              3270048   364.3 ns/op    96 B/op    4 allocs/op
 
 Div:
 ShopSpring           2890861   423.2 ns/op   440 B/op   17 allocs/op
