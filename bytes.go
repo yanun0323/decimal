@@ -13,12 +13,6 @@ var (
 	twoBytes  = []byte{'2'}
 )
 
-func copyBytes(src []byte) []byte {
-	dst := make([]byte, len(src))
-	copy(dst, src)
-	return dst
-}
-
 // quickCheckZero returns true when the given byte slice represents a
 // variety of textual zero values ("0", "00", "+0", "-0", ".0", "0." …).
 //
@@ -550,11 +544,7 @@ func isNegative(buf []byte) bool {
 	return buf[0] == '-'
 }
 
-func isPositive(buf []byte) bool {
-	return !isNegative(buf) && !isZero(buf)
-}
-
-// greater return true if the d1 > d2
+// great return true if the d1 > d2
 //
 //	example: 1234.001 vs 12.00001
 //	1234.001**
@@ -564,7 +554,7 @@ func isPositive(buf []byte) bool {
 //	1234.00001
 //	**12.1****
 //	^ // <- pointer go backward
-func greater(a, b []byte) bool {
+func great(a, b []byte) bool {
 	sA, sB := sign(a), sign(b)
 	if sA != sB {
 		return sA > sB

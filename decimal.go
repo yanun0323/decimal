@@ -512,7 +512,7 @@ func (d Decimal) Cmp(d2 Decimal) int {
 		return 0
 	}
 
-	if greater(b, b2) {
+	if great(b, b2) {
 		return 1
 	}
 
@@ -526,7 +526,7 @@ func (d Decimal) Equal(d2 Decimal) bool {
 
 // Greater return d > d2
 func (d Decimal) Greater(d2 Decimal) bool {
-	return greater(normalize([]byte(d)), normalize([]byte(d2)))
+	return great(normalize([]byte(d)), normalize([]byte(d2)))
 }
 
 // Less return d < d2
@@ -541,7 +541,7 @@ func (d Decimal) GreaterOrEqual(d2 Decimal) bool {
 
 // LessOrEqual return d <= d2
 func (d Decimal) LessOrEqual(d2 Decimal) bool {
-	return !greater(normalize([]byte(d)), normalize([]byte(d2)))
+	return !great(normalize([]byte(d)), normalize([]byte(d2)))
 }
 
 // Mul return d * d2
