@@ -97,7 +97,11 @@ Compare to [github.com/shopspring/decimal](https://github.com/shopspring/decimal
 - **Overall Speed**: 2.0-6.5x faster across all operations
 - **Memory Efficiency**: 70% reduction in memory allocations
 
-> **Mul**, **Div**: _0.7x_ slower but _40%_ reduction in memory allocations.
+> **Mul**: _0.7x_ slower but _70%_ reduction in memory allocations.
+>
+> **Div**: _0.7x_ slower but _40%_ reduction in memory allocations.
+>
+> **Mod**: _0.7x_ slower but _50%_ reduction in memory allocations.
 
 The benchmarks demonstrate consistent performance advantages across creation, arithmetic, transformations, and comparisons while maintaining full API compatibility with shopspring/decimal.
 
@@ -206,6 +210,10 @@ Pow:
 ShopSpring            206235    5883 ns/op  6653 B/op  261 allocs/op
 Decimal               240930    5063 ns/op  2312 B/op  103 allocs/op
 
+Mod:
+ShopSpring         	 1687699	 674.5 ns/op	 808 B/op	  28 allocs/op
+Decimal              1328233	 887.0 ns/op	 376 B/op	  18 allocs/op
+
 Add:
 ShopSpring           1877947   646.3 ns/op   728 B/op   28 allocs/op
 Decimal              3236866   366.2 ns/op   136 B/op    6 allocs/op
@@ -238,13 +246,6 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ## API Differences
 
 This section outlines the differences between our decimal implementation and the shopspring/decimal library. We've made several design decisions to improve performance, simplify the API, and provide more intuitive method names.
-
-### In Development
-
-```makefile
-Method:
-  Mod()
-```
 
 ### Alternatives:
 

@@ -273,30 +273,33 @@ func (d Decimal) Add(d2 Decimal) Decimal {
 //	d2, _ := decimal.New("90.99")
 //	d1.Sub(d2).String() // "9.01"
 func (d Decimal) Sub(d2 Decimal) Decimal {
-	b, a := normalize([]byte(d)), normalize([]byte(d2))
+	return Decimal(sub(normalize([]byte(d)), normalize([]byte(d2))))
+}
+
+func sub(b, a []byte) []byte {
 	baseNegative := b[0] == '-'
 	additionNegative := a[0] == '-'
 	if baseNegative && additionNegative {
 		b = trimFront(b, 1)
 		a = trimFront(a, 1)
 		// -b - -a = -b + a = a - b
-		return Decimal(unsignedSub(a, b))
+		return unsignedSub(a, b)
 	}
 
 	if baseNegative {
 		b = trimFront(b, 1)
 		// -b - a = - (b + a)
-		return Decimal(pushFront(unsignedAdd(a, b), '-'))
+		return pushFront(unsignedAdd(a, b), '-')
 	}
 
 	if additionNegative {
 		a = trimFront(a, 1)
 		// b - -a = b + a
-		return Decimal(unsignedAdd(b, a))
+		return unsignedAdd(b, a)
 	}
 
 	// b - a = b - a
-	return Decimal(unsignedSub(b, a))
+	return unsignedSub(b, a)
 }
 
 // clean the zero and dot of prefixes and suffixes
@@ -961,4 +964,12 @@ func addCarryToPosition(buf []byte, pos int) []byte {
 	}
 
 	return buf
+}
+
+func (d Decimal) Mod(d2 Decimal) Decimal {
+	b1 := normalize([]byte(d))
+	b2 := normalize([]byte(d2))
+	divided := div(normalize([]byte(d)), b2)
+	divided = truncate(divided, 0)
+	return Decimal(sub(b1, mul(divided, b2)))
 }

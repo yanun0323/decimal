@@ -628,3 +628,23 @@ func BenchmarkDiv(b *testing.B) {
 		},
 	)
 }
+
+
+func BenchmarkMod(b *testing.B) {
+	Run(b,
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := decimal.NewFromString(_operatorBase)
+				d2, _ := decimal.NewFromString(_operatorAddition)
+				_ = d1.Mod(d2)
+			}
+		},
+		func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				d1, _ := New(_operatorBase)
+				d2, _ := New(_operatorAddition)
+				_ = d1.Mod(d2)
+			}
+		},
+	)
+}

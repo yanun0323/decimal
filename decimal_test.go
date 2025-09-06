@@ -3118,3 +3118,21 @@ func (su *DecimalSuite) TestRoundTowardToZero() {
 		})
 	}
 }
+
+func (su *DecimalSuite) TestMod() {
+	testCases := []struct {
+		desc     string
+		input    string
+		input2   string
+		expected string
+	}{
+		{"10%3", "10", "3", "1"},
+	}
+
+	for _, tc := range testCases {
+		su.T().Run(tc.desc, func(t *testing.T) {
+			result :=Require(tc.input).Mod(Require(tc.input2))
+			su.Equal(tc.expected, result.String(), tc.desc)
+		})
+	}
+}
