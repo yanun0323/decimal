@@ -211,8 +211,8 @@ ShopSpring            206235    5883 ns/op  6653 B/op  261 allocs/op
 Decimal               240930    5063 ns/op  2312 B/op  103 allocs/op
 
 Mod:
-ShopSpring         	 1687699	 674.5 ns/op	 808 B/op	  28 allocs/op
-Decimal              1328233	 887.0 ns/op	 376 B/op	  18 allocs/op
+ShopSpring           1687699   674.5 ns/op   808 B/op   28 allocs/op
+Decimal              1328233   887.0 ns/op   376 B/op   18 allocs/op
 
 Add:
 ShopSpring           1877947   646.3 ns/op   728 B/op   28 allocs/op
