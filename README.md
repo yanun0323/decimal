@@ -251,7 +251,6 @@ This section outlines the differences between our decimal implementation and the
 
 ```makefile
 Method:
-  Copy()            no need, Decimal is already a copyable structure (string)
   MarshalJSON()     no need, Decimal is already a marshallable structure (string)
   UnmarshalJSON()   no need, Decimal is already a Unmarshallable structure (string)
 
@@ -260,15 +259,7 @@ Method:
   StringFixed()     parameter type `int32 -> int`
   Truncate()        parameter type `int32 -> int`
 
-  GreaterThan()         ->  use Greater
-  GreaterThanOrEqual()  ->  use GreaterOrEqual
-  LessThan()            ->  use Less
-  LessThanOrEqual()     ->  use LessOrEqual
   Equals()              ->  use Equal
-  RoundUp()             ->  use RoundAwayFromZero
-  RoundDown()           ->  use RoundTowardToZero
-  RoundCeil()           ->  use Ceil
-  RoundFloor()          ->  use Floor
   Ceil()                ->  use Ceil(0)
   Floor()               ->  use Floor(0)
 ```
@@ -284,12 +275,7 @@ Variables:
   ExpMaxIterations
 
 Function:
-  Sum
-  Avg
-  Max
-  Min
   NewFromFloatWithExponent
-  NewFromFormattedString
   NewNullDecimal
   RescalePair
 

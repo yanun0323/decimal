@@ -22,6 +22,10 @@ func (d Decimal) Div(d2 Decimal) Decimal {
 	return Decimal(div(normalize([]byte(d)), normalize([]byte(d2))))
 }
 
+func getDivisionPrecision() int {
+	return DivisionPrecision
+}
+
 func div(a, b []byte) []byte {
 	if isZero(b) {
 		panic("division by zero")
@@ -45,8 +49,9 @@ func div(a, b []byte) []byte {
 		panic("convert decimal to big int")
 	}
 
+	dp := getDivisionPrecision()
 	// Calculate scaling factor to preserve DivisionPrecision digits
-	shiftExp := DivisionPrecision + i2Shift - iShift
+	shiftExp := dp + i2Shift - iShift
 
 	// Scale numerator or denominator accordingly
 	var scaled big.Int
@@ -61,7 +66,7 @@ func div(a, b []byte) []byte {
 		scaled.Div(&scaled, &denom)
 	}
 
-	return tidyBytes(shift([]byte(scaled.String()), -DivisionPrecision))
+	return tidyBytes(shift([]byte(scaled.String()), -dp))
 }
 
 // ------------------------- helper -------------------------

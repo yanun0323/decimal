@@ -490,7 +490,7 @@ func BenchmarkGreater(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				d1, _ := New(_operatorBase)
 				d2, _ := New(_operatorAddition)
-				_ = d1.Greater(d2)
+				_ = d1.GreaterThan(d2)
 			}
 		},
 	)
@@ -509,7 +509,7 @@ func BenchmarkLess(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				d1, _ := New(_operatorBase)
 				d2, _ := New(_operatorAddition)
-				_ = d1.Less(d2)
+				_ = d1.LessThan(d2)
 			}
 		},
 	)
@@ -528,7 +528,7 @@ func BenchmarkGreaterOrEqual(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				d1, _ := New(_operatorBase)
 				d2, _ := New(_operatorAddition)
-				_ = d1.GreaterOrEqual(d2)
+				_ = d1.GreaterThanOrEqual(d2)
 			}
 		},
 	)
@@ -547,7 +547,7 @@ func BenchmarkLessOrEqual(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				d1, _ := New(_operatorBase)
 				d2, _ := New(_operatorAddition)
-				_ = d1.LessOrEqual(d2)
+				_ = d1.LessThanOrEqual(d2)
 			}
 		},
 	)
@@ -628,7 +628,6 @@ func BenchmarkDiv(b *testing.B) {
 		},
 	)
 }
-
 
 func BenchmarkMod(b *testing.B) {
 	Run(b,

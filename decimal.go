@@ -3,6 +3,7 @@ package decimal
 import (
 	"math"
 	"math/big"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -111,6 +112,81 @@ func RequireFromString(value string) Decimal {
 	return Require(value)
 }
 
+// NewFromFormattedString returns a new Decimal from a formatted string representation.
+// The second argument - replRegexp, is a regular expression that is used to find characters that should be
+// removed from given decimal string representation. All matched characters will be replaced with an empty string.
+//
+// Example:
+//
+//	r := regexp.MustCompile("[$,]")
+//	d1, err := NewFromFormattedString("$5,125.99", r)
+//
+//	r2 := regexp.MustCompile("[_]")
+//	d2, err := NewFromFormattedString("1_000_000", r2)
+//
+//	r3 := regexp.MustCompile("[USD\\s]")
+//	d3, err := NewFromFormattedString("5000 USD", r3)
+func NewFromFormattedString(value string, replRegexp *regexp.Regexp) (Decimal, error) {
+	parsedValue := replRegexp.ReplaceAllString(value, "")
+	d, err := NewFromString(parsedValue)
+	if err != nil {
+		return Zero, err
+	}
+	return d, nil
+}
+
+// Min returns the smallest Decimal that was passed in the arguments.
+//
+// To call this function with an array, you must do:
+//
+//	Min(arr[0], arr[1:]...)
+//
+// This makes it harder to accidentally call Min with 0 arguments.
+func Min(first Decimal, rest ...Decimal) Decimal {
+	curr := first
+	for i := 1; i < len(rest); i++ {
+		if rest[i].LessThan(curr) {
+			curr = rest[i]
+		}
+	}
+
+	return curr
+}
+
+// Max returns the largest Decimal that was passed in the arguments.
+//
+// To call this function with an array, you must do:
+//
+//	Max(arr[0], arr[1:]...)
+//
+// This makes it harder to accidentally call Max with 0 arguments.
+func Max(first Decimal, rest ...Decimal) Decimal {
+	curr := first
+	for i := 0; i < len(rest); i++ {
+		if rest[i].GreaterThan(curr) {
+			curr = rest[i]
+		}
+	}
+
+	return curr
+}
+
+// Sum returns the combined total of the provided first and rest Decimals
+func Sum(first Decimal, rest ...Decimal) Decimal {
+	summed := first
+	for _, d := range rest {
+		summed = summed.Add(d)
+	}
+	return summed
+}
+
+// Avg returns the average value of the provided first and rest Decimals
+func Avg(first Decimal, rest ...Decimal) Decimal {
+	count := NewFromInt(int64(len(rest) + 1))
+	sum := Sum(first, rest...)
+	return sum.Div(count)
+}
+
 type Decimal string
 
 // String returns the string representation of the decimal with the fixed point.
@@ -125,6 +201,11 @@ type Decimal string
 //	-12.345
 func (d Decimal) String() string {
 	return string(normalize([]byte(d)))
+}
+
+// Copy returns a copy of decimal with the same value and exponent, but a different pointer to value.
+func (d Decimal) Copy() Decimal {
+	return d
 }
 
 // StringFixed returns a rounded fixed-point string with places digits after the decimal point.
@@ -411,6 +492,10 @@ func pow(a, b []byte, reused ...*[]byte) []byte {
 		return oneBytes
 	}
 
+	if bIntPart == 1 {
+		return a
+	}
+
 	temp := pow(a, div(b, twoBytes), reused...)
 	if bIntPart%2 == 0 {
 		return sqr(temp, reused...)
@@ -524,23 +609,23 @@ func (d Decimal) Equal(d2 Decimal) bool {
 	return string(normalize([]byte(d))) == string(normalize([]byte(d2)))
 }
 
-// Greater return d > d2
-func (d Decimal) Greater(d2 Decimal) bool {
+// GreaterThan return d > d2
+func (d Decimal) GreaterThan(d2 Decimal) bool {
 	return great(normalize([]byte(d)), normalize([]byte(d2)))
 }
 
-// Less return d < d2
-func (d Decimal) Less(d2 Decimal) bool {
+// LessThan return d < d2
+func (d Decimal) LessThan(d2 Decimal) bool {
 	return less(normalize([]byte(d)), normalize([]byte(d2)))
 }
 
-// GreaterOrEqual return d >= d2
-func (d Decimal) GreaterOrEqual(d2 Decimal) bool {
+// GreaterThanOrEqual return d >= d2
+func (d Decimal) GreaterThanOrEqual(d2 Decimal) bool {
 	return !less(normalize([]byte(d)), normalize([]byte(d2)))
 }
 
-// LessOrEqual return d <= d2
-func (d Decimal) LessOrEqual(d2 Decimal) bool {
+// LessThanOrEqual return d <= d2
+func (d Decimal) LessThanOrEqual(d2 Decimal) bool {
 	return !great(normalize([]byte(d)), normalize([]byte(d2)))
 }
 

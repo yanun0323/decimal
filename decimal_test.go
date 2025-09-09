@@ -1498,7 +1498,7 @@ func (su *DecimalSuite) TestGreater() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
-			su.Equal(tc.expected, tc.d1.Greater(tc.d2), "%s > %s ?", tc.d1, tc.d2)
+			su.Equal(tc.expected, tc.d1.GreaterThan(tc.d2), "%s > %s ?", tc.d1, tc.d2)
 		})
 	}
 }
@@ -1609,7 +1609,7 @@ func (su *DecimalSuite) TestLess() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc, tc.d1, tc.d2)
-			su.Equal(tc.expected, tc.d1.Less(tc.d2), "%s < %s ?", tc.d1, tc.d2)
+			su.Equal(tc.expected, tc.d1.LessThan(tc.d2), "%s < %s ?", tc.d1, tc.d2)
 		})
 	}
 }
@@ -1720,7 +1720,7 @@ func (su *DecimalSuite) TestGreaterOrEqual() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
-			su.Equal(tc.expected, tc.d1.GreaterOrEqual(tc.d2), "%s >= %s ?", tc.d1, tc.d2)
+			su.Equal(tc.expected, tc.d1.GreaterThanOrEqual(tc.d2), "%s >= %s ?", tc.d1, tc.d2)
 		})
 	}
 }
@@ -1831,7 +1831,7 @@ func (su *DecimalSuite) TestLessOrEqual() {
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
 			t.Log(tc.desc)
-			su.Equal(tc.expected, tc.d1.LessOrEqual(tc.d2), "%s <= %s ?", tc.d1, tc.d2)
+			su.Equal(tc.expected, tc.d1.LessThanOrEqual(tc.d2), "%s <= %s ?", tc.d1, tc.d2)
 		})
 	}
 }
@@ -3131,7 +3131,7 @@ func (su *DecimalSuite) TestMod() {
 
 	for _, tc := range testCases {
 		su.T().Run(tc.desc, func(t *testing.T) {
-			result :=Require(tc.input).Mod(Require(tc.input2))
+			result := Require(tc.input).Mod(Require(tc.input2))
 			su.Equal(tc.expected, result.String(), tc.desc)
 		})
 	}
