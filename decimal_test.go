@@ -142,6 +142,12 @@ func (su *DecimalSuite) TestStringFixed() {
 			expected: "123.4560000000",
 		},
 		{
+			desc:     "Positive Overflow Precision",
+			input:    "123",
+			prec:     10,
+			expected: "123.0000000000",
+		},
+		{
 			desc:     "Zero Precision",
 			input:    "123.456",
 			prec:     0,

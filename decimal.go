@@ -227,6 +227,7 @@ func (d Decimal) StringFixed(places int) string {
 
 	dotIdx := findDotIndex(buf)
 	if dotIdx == -1 {
+		buf = pushBack(buf, '.')
 		dotIdx = len(buf) - 1
 	}
 
