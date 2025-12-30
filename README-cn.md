@@ -1,10 +1,10 @@
-# Decimal256
+# Decimal
 
 [![English](https://img.shields.io/badge/English-Click-yellow)](README.md)
 [![繁體中文](https://img.shields.io/badge/繁體中文-點擊查看-orange)](README-tw.md)
 [![简体中文](https://img.shields.io/badge/简体中文-点击查看-orange)](README-cn.md)
 
-基于 256-bit 二补数整数的固定小数（32 位）十进制库，目标为零分配与高性能。
+提供三种固定大小 `Decimal128` / `Decimal256` / `Decimal512` 实现的零分配固定小数十进制库。
 
 ## 系统要求
 
@@ -18,40 +18,70 @@ import "github.com/yanun0323/decimal"
 
 ## 概览
 
-Decimal256 为固定 32 位小数的十进制类型：
+各类型有自己的固定小数尺度与精度：
 
-- **数值模型**：`raw / 10^32`
-- **存储**：256-bit 二补数（4 x uint64）
-- **溢出**：256-bit 截断（wrap-around）
+- `Decimal128`：尺度 `10^16`，整数 **16** 位，小数 **16** 位
+- `Decimal256`：尺度 `10^32`，整数 **32** 位，小数 **32** 位
+- `Decimal512`：尺度 `10^64`，整数 **64** 位，小数 **64** 位
+
+共通特性：
+
+- **数值模型**：`raw / 10^scale`
+- **溢出**：按位宽截断（wrap-around）
 - **零值**：可直接使用，表示 `0`
 - **不使用 big.Int**：全程固定大小运算
 
-## 构造函数
+内存布局：
 
-- `NewDecimal256(intPart, decimalPart int64) Decimal256`
-  - `decimalPart` 视为“小数位数字”。
+- `Decimal128`：128-bit 二补数（2 x uint64）
+- `Decimal256`：256-bit 二补数（4 x uint64）
+- `Decimal512`：512-bit 二补数（8 x uint64）
+
+### 精度规则
+
+所有构造与解析都遵守：
+
+- **整数部分**：只保留最低 *N* 位（更高位会被丢弃）
+- **小数部分**：只保留最高 *N* 位（更低位会被丢弃）
+
+其中 *N* 为该类型的小数位精度（16/32/64）。
+
+字符串/JSON 解析会**先应用指数位移**，再应用精度规则。
+
+## 构造函数（各类型通用）
+
+将 `XXX` 替换为 `128`、`256` 或 `512`：
+
+- `NewDecimalXXX(intPart, decimalPart int64) DecimalXXX`
+  - `decimalPart` 视为小数位数字。
   - 例：`NewDecimal256(123, 45)` = `123.45`。
-  - 超过 32 位小数会被截断（toward zero）。
-- `NewDecimal256FromString(string) (Decimal256, error)`
+  - 小数位超过尺度会向 0 截断。
+  - 应用精度规则（整数低 *N*、小数高 *N*）。
+- `NewDecimalXXXFromString(string) (DecimalXXX, error)`
   - 支持前后空白、`_` 分隔、`.` 小数点与 `e/E` 指数。
-  - 小数位超过 32 位会被截断。
-- `NewDecimal256FromInt(int64) Decimal256`
-- `NewDecimal256FromFloat(float64) (Decimal256, error)`
-  - 向零截断，`NaN/Inf` 返回错误。
-- `NewDecimal256FromBinary([]byte) (Decimal256, error)`
-  - 32 bytes，小端序。
-- `NewDecimal256FromJSON([]byte) (Decimal256, error)`
+  - 先应用指数位移，再应用精度规则。
+- `NewDecimalXXXFromInt(int64) DecimalXXX`
+  - 应用精度规则（整数低 *N*）。
+- `NewDecimalXXXFromFloat(float64) (DecimalXXX, error)`
+  - 向 0 截断，`NaN/Inf` 返回错误。
+  - 转换后应用精度规则。
+- `NewDecimalXXXFromBinary([]byte) (DecimalXXX, error)`
+  - 固定长度，小端序（见 Binary 章节）。
+  - 解码后应用精度规则。
+- `NewDecimalXXXFromJSON([]byte) (DecimalXXX, error)`
   - 接受 JSON **字符串**或**数字**。
+  - 先应用指数位移，再应用精度规则。
 
 ## 转换与格式化
 
 - `Int64() (intPart, decimalPart int64)`
-  - `decimalPart` 仍为 10^32 的小数尺度。
+  - `decimalPart` 以类型尺度返回（`10^16` / `10^32` / `10^64`）。
 - `Float64() float64`
 - `String() string`
   - 自动移除小数尾端多余 0。
 - `StringFixed(n int) string`
-  - `n > 32` 会被截断为 32；`n <= 0` 只返回整数部分。
+  - `n > scaleDigits` 会截断到类型尺度（16/32/64）。
+  - `n <= 0` 只返回整数部分。
 
 ### 零分配追加
 
@@ -79,10 +109,10 @@ Decimal256 为固定 32 位小数的十进制类型：
 - `RoundAwayFromZero`, `RoundTowardToZero`
 - `Ceil`, `Floor`
 
-数位操作规则：
+数位操作规则（scaleDigits = 16/32/64）：
 
-- `n > 32`：不变
-- `n <= -32`：返回 0
+- `n > scaleDigits`：不变
+- `n <= -scaleDigits`：返回 0
 - `n < 0`：作用在整数位（例如 `Truncate(-1)` 影响十位）
 
 ## 超越函数
@@ -93,8 +123,17 @@ Decimal256 为固定 32 位小数的十进制类型：
 
 ## Binary / JSON 编码
 
-- **Binary**：32 bytes，小端序（4 x uint64）
+- **Binary**：固定长度、小端序
+  - `Decimal128`：16 bytes
+  - `Decimal256`：32 bytes
+  - `Decimal512`：64 bytes
 - **JSON**：输出字符串；解析接受字符串或数字
+
+## 泛型接口
+
+包内同时提供编译期限制用的泛型接口：
+
+- `type Decimal[T decimal] interface { ... }`
 
 ## 性能
 

@@ -50,6 +50,14 @@ func TestDecimal256Constructors(t *testing.T) {
 		t.Fatalf("NewDecimal256FromString(-.5) string mismatch: %s", got)
 	}
 
+	d6, err := NewDecimal256FromString("12345678901234567890123456789012345")
+	if err != nil {
+		t.Fatalf("NewDecimal256FromString precision error: %v", err)
+	}
+	if got := d6.String(); got != "45678901234567890123456789012345" {
+		t.Fatalf("NewDecimal256 precision mismatch: %s", got)
+	}
+
 	if _, err := NewDecimal256FromString("bad"); err == nil {
 		t.Fatalf("NewDecimal256FromString expected error")
 	}

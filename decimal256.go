@@ -71,6 +71,8 @@ var (
 
 // NewDecimal256 constructs a Decimal256 from integer and fractional parts.
 //
+// intPart keeps only the lowest 32 decimal digits (higher digits are dropped).
+// decimalPart keeps only the highest 32 fractional digits (lower digits are dropped).
 // decimalPart is interpreted as fractional digits with an implicit scale based on
 // its decimal digit length (e.g. 987654321 -> 0.987654321). It is then scaled to
 // 10^32 before combining with intPart. If decimalPart has more than 32 digits, it
@@ -78,39 +80,42 @@ var (
 // with two's-complement wrap on overflow.
 func NewDecimal256(intPart, decimalPart int64) Decimal256 {
 	ip := mul256(u256FromInt64(intPart), scale)
-	if decimalPart == 0 {
-		return Decimal256(lower256(ip))
-	}
-	abs, neg := absInt64(decimalPart)
-	digits := decimalDigitsU64(abs)
-	shift := scaleDigits - digits
-	frac := u256{abs, 0, 0, 0}
-	var scaled u256
-	if shift == 0 {
-		scaled = frac
-	} else if shift < 0 {
-		factor := pow10Value(int64(-shift))
-		if isZero(factor) {
-			scaled = u256{}
+	raw := lower256(ip)
+	if decimalPart != 0 {
+		abs, neg := absInt64(decimalPart)
+		digits := decimalDigitsU64(abs)
+		shift := scaleDigits - digits
+		frac := u256{abs, 0, 0, 0}
+		var scaled u256
+		if shift == 0 {
+			scaled = frac
+		} else if shift < 0 {
+			factor := pow10Value(int64(-shift))
+			if isZero(factor) {
+				scaled = u256{}
+			} else {
+				scaled = divByU256Trunc(frac, factor)
+			}
+		} else if shift < len(pow10U64) {
+			scaled = mul256ByUint64(frac, pow10U64[shift])
 		} else {
-			scaled = divByU256Trunc(frac, factor)
+			p := mul256(frac, pow10Value(int64(shift)))
+			scaled = lower256(p)
 		}
-	} else if shift < len(pow10U64) {
-		scaled = mul256ByUint64(frac, pow10U64[shift])
-	} else {
-		p := mul256(frac, pow10Value(int64(shift)))
-		scaled = lower256(p)
+		if neg {
+			scaled = neg256(scaled)
+		}
+		raw = add256(raw, scaled)
 	}
-	if neg {
-		scaled = neg256(scaled)
-	}
-	return Decimal256(add256(lower256(ip), scaled))
+	return Decimal256(applyPrecision256(raw))
 }
 
 // NewDecimal256FromString parses a decimal string with optional sign, dot, and exponent.
 //
 // It accepts leading/trailing ASCII whitespace and optional '_' separators.
-// Excess fractional digits are truncated (toward zero) to the fixed 32-digit scale.
+// Exponent shifting is applied first, then integer digits beyond 32 are dropped and
+// fractional digits beyond 32 are dropped. Excess fractional digits are truncated
+// (toward zero) to the fixed 32-digit scale.
 func NewDecimal256FromString(s string) (Decimal256, error) {
 	u, err := parseDecimalString(s)
 	if err != nil {
@@ -122,7 +127,7 @@ func NewDecimal256FromString(s string) (Decimal256, error) {
 // NewDecimal256FromInt constructs a Decimal256 from an int64 integer value.
 func NewDecimal256FromInt(v int64) Decimal256 {
 	p := mul256(u256FromInt64(v), scale)
-	return Decimal256(lower256(p))
+	return Decimal256(applyPrecision256(lower256(p)))
 }
 
 // NewDecimal256FromFloat converts a float64 to Decimal256 by truncating toward zero.
@@ -144,6 +149,7 @@ func NewDecimal256FromFloat(v float64) (Decimal256, error) {
 		return Decimal256{}, errInvalidFloat
 	}
 	u := u256FromFloatTrunc(scaled)
+	u = applyPrecision256(u)
 	if neg {
 		u = neg256(u)
 	}
@@ -151,16 +157,19 @@ func NewDecimal256FromFloat(v float64) (Decimal256, error) {
 }
 
 // NewDecimal256FromBinary decodes a 32-byte little-endian binary representation.
+//
+// Precision rules are applied after decoding.
 func NewDecimal256FromBinary(b []byte) (Decimal256, error) {
 	if len(b) != 32 {
 		return Decimal256{}, errInvalidBinaryLen
 	}
-	return Decimal256{
+	u := u256{
 		binary.LittleEndian.Uint64(b[0:8]),
 		binary.LittleEndian.Uint64(b[8:16]),
 		binary.LittleEndian.Uint64(b[16:24]),
 		binary.LittleEndian.Uint64(b[24:32]),
-	}, nil
+	}
+	return Decimal256(applyPrecision256(u)), nil
 }
 
 // NewDecimal256FromJSON decodes a JSON string or number into a Decimal256.
@@ -1000,7 +1009,7 @@ func parseDecimalString(s string) (u256, error) {
 	if sign < 0 {
 		val = neg256(val)
 	}
-	return val, nil
+	return applyPrecision256(val), nil
 }
 
 // parseDecimalBytes is an internal helper.
@@ -1097,7 +1106,28 @@ func parseDecimalBytes(b []byte) (u256, error) {
 	if sign < 0 {
 		val = neg256(val)
 	}
-	return val, nil
+	return applyPrecision256(val), nil
+}
+
+// applyPrecision256 drops integer digits beyond 32 and fractional digits beyond 32.
+// It assumes the input is scaled by 10^32.
+func applyPrecision256(u u256) u256 {
+	if isZero(u) {
+		return u
+	}
+	neg := isNeg(u)
+	if neg {
+		u = neg256(u)
+	}
+	intPart, fracPart := divMod256By256(u, scale)
+	_, intRem := divMod256By256(intPart, scale)
+	intPart = intRem
+	// scaleDigits == 32, so fractional trimming is a no-op.
+	raw := add256(lower256(mul256(intPart, scale)), fracPart)
+	if neg {
+		raw = neg256(raw)
+	}
+	return raw
 }
 
 // trimRightZeros is an internal helper.

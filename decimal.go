@@ -1,7 +1,13 @@
 package decimal
 
+var _ Decimal[Decimal128] = (*Decimal128)(nil)
+
+type decimal interface {
+	Decimal128 | Decimal256 | Decimal512
+}
+
 // Don't use this. just for definition.
-type Decimal interface {
+type Decimal[T decimal] interface {
 	// conversions
 	Int64() (intPart, decimalPart int64)
 	Float64() float64
@@ -15,38 +21,38 @@ type Decimal interface {
 	Sign() int // 0:zero 1:pos 2:neg
 
 	// modification
-	Neg() Decimal
-	Inv() Decimal
-	Abs() Decimal
-	Truncate(int) Decimal
-	Shift(int) Decimal
-	Round(int) Decimal
-	RoundAwayFromZero(int) Decimal
-	RoundTowardToZero(int) Decimal
-	Ceil(int) Decimal
-	Floor(int) Decimal
+	Neg() T
+	Inv() T
+	Abs() T
+	Truncate(int) T
+	Shift(int) T
+	Round(int) T
+	RoundAwayFromZero(int) T
+	RoundTowardToZero(int) T
+	Ceil(int) T
+	Floor(int) T
 
 	// comparison
-	Equal(Decimal) bool
-	GreaterThan(Decimal) bool
-	LessThan(Decimal) bool
-	GreaterOrEqual(Decimal) bool
-	LessOrEqual(Decimal) bool
+	Equal(T) bool
+	GreaterThan(T) bool
+	LessThan(T) bool
+	GreaterOrEqual(T) bool
+	LessOrEqual(T) bool
 
 	// arithmetic operations
-	Add(Decimal) Decimal
-	Sub(Decimal) Decimal
-	Mul(Decimal) Decimal
-	Div(Decimal) Decimal
-	Mod(Decimal) Decimal
+	Add(T) T
+	Sub(T) T
+	Mul(T) T
+	Div(T) T
+	Mod(T) T
 
 	// transcendental operations
-	Pow(Decimal) Decimal
-	Sqrt() Decimal
-	Exp() Decimal
-	Log() Decimal
-	Log2() Decimal
-	Log10() Decimal
+	Pow(T) T
+	Sqrt() T
+	Exp() T
+	Log() T
+	Log2() T
+	Log10() T
 
 	// normalized
 	EncodeBinary() ([]byte, error)

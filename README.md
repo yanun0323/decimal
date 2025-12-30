@@ -1,10 +1,10 @@
-# Decimal256
+# Decimal
 
 [![English](https://img.shields.io/badge/English-Click-yellow)](README.md)
 [![繁體中文](https://img.shields.io/badge/繁體中文-點擊查看-orange)](README-tw.md)
 [![简体中文](https://img.shields.io/badge/简体中文-点击查看-orange)](README-cn.md)
 
-A zero-allocation, fixed-scale decimal library built on a 256-bit two's-complement integer.
+A zero-allocation, fixed-scale decimal library with three fixed-size implementations. `Decimal128` / `Decimal256` / `Decimal512`
 
 ## Requirements
 
@@ -18,40 +18,70 @@ import "github.com/yanun0323/decimal"
 
 ## Overview
 
-Decimal256 is a fixed-scale decimal type with **32 fractional digits**.
+Each type has its own fixed scale and precision:
 
-- **Value model**: `raw / 10^32`
-- **Storage**: 256-bit two's-complement integer (4 x uint64)
-- **Overflow**: truncated to 256-bit (wrap-around)
+- `Decimal128`: scale `10^16`, integer **16** digits, fractional **16** digits
+- `Decimal256`: scale `10^32`, integer **32** digits, fractional **32** digits
+- `Decimal512`: scale `10^64`, integer **64** digits, fractional **64** digits
+
+Common properties:
+
+- **Value model**: `raw / 10^scale`
+- **Overflow**: truncated to the underlying bit width (wrap-around)
 - **Zero value**: valid and represents `0`
 - **No big.Int**: all arithmetic is fixed-size
 
-## Constructors
+Memory layout:
 
-- `NewDecimal256(intPart, decimalPart int64) Decimal256`
-  - `decimalPart` is treated as **fractional digits**.
+- `Decimal128`: 128-bit two's-complement integer (2 x uint64)
+- `Decimal256`: 256-bit two's-complement integer (4 x uint64)
+- `Decimal512`: 512-bit two's-complement integer (8 x uint64)
+
+### Precision rules
+
+For all constructors/parsers:
+
+- **Integer part**: keep only the lowest *N* digits (higher digits are dropped)
+- **Fractional part**: keep only the highest *N* digits (lower digits are dropped)
+
+Where *N* is the fractional precision for the type (16/32/64).
+
+For string/JSON parsing, **exponent shifting is applied first**, then the precision rules are applied.
+
+## Constructors (per type)
+
+Replace `XXX` with `128`, `256`, or `512`:
+
+- `NewDecimalXXX(intPart, decimalPart int64) DecimalXXX`
+  - `decimalPart` is treated as fractional digits.
   - Example: `NewDecimal256(123, 45)` = `123.45`.
-  - More than 32 digits are truncated toward zero.
-- `NewDecimal256FromString(string) (Decimal256, error)`
+  - Excess fractional digits are truncated toward zero.
+  - Precision rules apply (integer low *N*, fractional high *N*).
+- `NewDecimalXXXFromString(string) (DecimalXXX, error)`
   - Accepts leading/trailing ASCII whitespace, `_` separators, optional `.` and `e/E`.
-  - Excess fractional digits are truncated to 32 places.
-- `NewDecimal256FromInt(int64) Decimal256`
-- `NewDecimal256FromFloat(float64) (Decimal256, error)`
+  - Exponent shifting is applied first, then precision rules apply.
+- `NewDecimalXXXFromInt(int64) DecimalXXX`
+  - Precision rules apply (integer low *N*).
+- `NewDecimalXXXFromFloat(float64) (DecimalXXX, error)`
   - Truncates toward zero. `NaN`/`Inf` return error.
-- `NewDecimal256FromBinary([]byte) (Decimal256, error)`
-  - Expects 32 bytes, little-endian.
-- `NewDecimal256FromJSON([]byte) (Decimal256, error)`
+  - Precision rules apply after conversion.
+- `NewDecimalXXXFromBinary([]byte) (DecimalXXX, error)`
+  - Expects fixed length, little-endian (see Binary section).
+  - Precision rules apply after decoding.
+- `NewDecimalXXXFromJSON([]byte) (DecimalXXX, error)`
   - Accepts JSON **string** or **number**.
+  - Exponent shifting is applied first, then precision rules apply.
 
 ## Conversions & Formatting
 
 - `Int64() (intPart, decimalPart int64)`
-  - `decimalPart` is scaled by 10^32 (same internal scale).
+  - `decimalPart` is scaled by the type scale (`10^16`, `10^32`, `10^64`).
 - `Float64() float64`
 - `String() string`
   - Removes trailing zeros in the fractional part.
 - `StringFixed(n int) string`
-  - If `n > 32`, it is truncated to 32. If `n <= 0`, only the integer part is returned.
+  - If `n > scaleDigits`, it is truncated to the type scale (16/32/64).
+  - If `n <= 0`, only the integer part is returned.
 
 ### Zero-allocation append
 
@@ -79,10 +109,10 @@ These append into a caller-provided buffer so allocation is fully controlled by 
 - `RoundAwayFromZero`, `RoundTowardToZero`
 - `Ceil`, `Floor`
 
-Rules for digit operations:
+Rules for digit operations (scaleDigits = 16/32/64 by type):
 
-- If `n > 32`: **no change**
-- If `n <= -32`: **return zero**
+- If `n > scaleDigits`: **no change**
+- If `n <= -scaleDigits`: **return zero**
 - If `n < 0`: operation applies to integer digits (e.g. `Truncate(-1)` => tens)
 
 ## Transcendental
@@ -93,8 +123,17 @@ Rules for digit operations:
 
 ## Binary / JSON Encoding
 
-- **Binary**: 32 bytes, little-endian (`[4]uint64` word order)
+- **Binary**: little-endian fixed size
+  - `Decimal128`: 16 bytes
+  - `Decimal256`: 32 bytes
+  - `Decimal512`: 64 bytes
 - **JSON**: encoded as string; decoder accepts string or number
+
+## Generic interface
+
+The package also exposes a generic interface for compile-time constraints:
+
+- `type Decimal[T decimal] interface { ... }`
 
 ## Performance
 
