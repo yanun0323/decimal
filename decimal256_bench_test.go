@@ -5,7 +5,7 @@ import "testing"
 var (
 	benchD1  = mustDecimalBench("123456789.987654321")
 	benchD2  = mustDecimalBench("-987654321.123456789")
-	benchD3  = NewDecimal256FromInt(2)
+	benchD3  = New256FromInt(2)
 	benchBin = func() []byte {
 		b, _ := benchD1.EncodeBinary()
 		return b
@@ -29,7 +29,7 @@ var (
 )
 
 func mustDecimalBench(s string) Decimal256 {
-	d, err := NewDecimal256FromString(s)
+	d, err := New256FromString(s)
 	if err != nil {
 		panic(err)
 	}
@@ -37,24 +37,24 @@ func mustDecimalBench(s string) Decimal256 {
 }
 
 func BenchmarkDecimal256_Constructors(b *testing.B) {
-	b.Run("NewDecimal256", func(b *testing.B) {
+	b.Run("New256", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal = NewDecimal256(123456789, 987654321)
+			benchSinkDecimal = New256(123456789, 987654321)
 		}
 	})
-	b.Run("NewDecimal256FromString", func(b *testing.B) {
+	b.Run("New256FromString", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal, benchSinkErr = NewDecimal256FromString("123456789.987654321")
+			benchSinkDecimal, benchSinkErr = New256FromString("123456789.987654321")
 		}
 	})
-	b.Run("NewDecimal256FromInt", func(b *testing.B) {
+	b.Run("New256FromInt", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal = NewDecimal256FromInt(123456789)
+			benchSinkDecimal = New256FromInt(123456789)
 		}
 	})
-	b.Run("NewDecimal256FromFloat", func(b *testing.B) {
+	b.Run("New256FromFloat", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal, benchSinkErr = NewDecimal256FromFloat(12345.5)
+			benchSinkDecimal, benchSinkErr = New256FromFloat(12345.5)
 		}
 	})
 }
@@ -218,7 +218,7 @@ func BenchmarkDecimal256_Arithmetic(b *testing.B) {
 func BenchmarkDecimal256_Transcendental(b *testing.B) {
 	b.Run("Pow", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal = benchD3.Pow(NewDecimal256FromInt(7))
+			benchSinkDecimal = benchD3.Pow(New256FromInt(7))
 		}
 	})
 	b.Run("Sqrt", func(b *testing.B) {
@@ -228,7 +228,7 @@ func BenchmarkDecimal256_Transcendental(b *testing.B) {
 	})
 	b.Run("Exp", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal = NewDecimal256FromInt(1).Exp()
+			benchSinkDecimal = New256FromInt(1).Exp()
 		}
 	})
 	b.Run("Log", func(b *testing.B) {
@@ -262,7 +262,7 @@ func BenchmarkDecimal256_EncodeDecode(b *testing.B) {
 	})
 	b.Run("NewFromBinary", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal, benchSinkErr = NewDecimal256FromBinary(benchBin)
+			benchSinkDecimal, benchSinkErr = New256FromBinary(benchBin)
 		}
 	})
 	b.Run("EncodeJSON", func(b *testing.B) {
@@ -278,7 +278,7 @@ func BenchmarkDecimal256_EncodeDecode(b *testing.B) {
 	})
 	b.Run("NewFromJSON", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal, benchSinkErr = NewDecimal256FromJSON(benchJSON)
+			benchSinkDecimal, benchSinkErr = New256FromJSON(benchJSON)
 		}
 	})
 	b.Run("AppendString", func(b *testing.B) {

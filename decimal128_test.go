@@ -8,71 +8,71 @@ import (
 
 func mustDecimal128(t *testing.T, s string) Decimal128 {
 	t.Helper()
-	d, err := NewDecimal128FromString(s)
+	d, err := New128FromString(s)
 	if err != nil {
-		t.Fatalf("NewDecimal128FromString(%q) error: %v", s, err)
+		t.Fatalf("New128FromString(%q) error: %v", s, err)
 	}
 	return d
 }
 
 func TestDecimal128Constructors(t *testing.T) {
-	d1 := NewDecimal128(123456, 987654321)
+	d1 := New128(123456, 987654321)
 	if got := d1.String(); got != "123456.987654321" {
-		t.Fatalf("NewDecimal128 string mismatch: %s", got)
+		t.Fatalf("New128 string mismatch: %s", got)
 	}
 
-	d1b := NewDecimal128(1, 1234567890123456789)
+	d1b := New128(1, 1234567890123456789)
 	if got := d1b.String(); got != "1.1234567890123456" {
-		t.Fatalf("NewDecimal128 truncation mismatch: %s", got)
+		t.Fatalf("New128 truncation mismatch: %s", got)
 	}
 
-	d2 := NewDecimal128FromInt(-123456)
+	d2 := New128FromInt(-123456)
 	if got := d2.String(); got != "-123456" {
-		t.Fatalf("NewDecimal128FromInt string mismatch: %s", got)
+		t.Fatalf("New128FromInt string mismatch: %s", got)
 	}
 
-	d2b := NewDecimal128FromInt(10000000000000000)
+	d2b := New128FromInt(10000000000000000)
 	if got := d2b.String(); got != "0" {
-		t.Fatalf("NewDecimal128FromInt truncation mismatch: %s", got)
+		t.Fatalf("New128FromInt truncation mismatch: %s", got)
 	}
 
-	d3, err := NewDecimal128FromFloat(1.25)
+	d3, err := New128FromFloat(1.25)
 	if err != nil {
-		t.Fatalf("NewDecimal128FromFloat error: %v", err)
+		t.Fatalf("New128FromFloat error: %v", err)
 	}
 	if diff := math.Abs(d3.Float64() - 1.25); diff > 1e-9 {
-		t.Fatalf("NewDecimal128FromFloat value mismatch: diff=%g", diff)
+		t.Fatalf("New128FromFloat value mismatch: diff=%g", diff)
 	}
 
-	d4, err := NewDecimal128FromString("  +1_234.4500e0 ")
+	d4, err := New128FromString("  +1_234.4500e0 ")
 	if err != nil {
-		t.Fatalf("NewDecimal128FromString error: %v", err)
+		t.Fatalf("New128FromString error: %v", err)
 	}
 	if got := d4.String(); got != "1234.45" {
-		t.Fatalf("NewDecimal128FromString string mismatch: %s", got)
+		t.Fatalf("New128FromString string mismatch: %s", got)
 	}
 
-	d5, err := NewDecimal128FromString("-.5")
+	d5, err := New128FromString("-.5")
 	if err != nil {
-		t.Fatalf("NewDecimal128FromString(-.5) error: %v", err)
+		t.Fatalf("New128FromString(-.5) error: %v", err)
 	}
 	if got := d5.String(); got != "-0.5" {
-		t.Fatalf("NewDecimal128FromString(-.5) string mismatch: %s", got)
+		t.Fatalf("New128FromString(-.5) string mismatch: %s", got)
 	}
 
-	d6, err := NewDecimal128FromString("12345678901234567890e-5")
+	d6, err := New128FromString("12345678901234567890e-5")
 	if err != nil {
-		t.Fatalf("NewDecimal128FromString exponent error: %v", err)
+		t.Fatalf("New128FromString exponent error: %v", err)
 	}
 	if got := d6.String(); got != "123456789012345.6789" {
-		t.Fatalf("NewDecimal128FromString exponent mismatch: %s", got)
+		t.Fatalf("New128FromString exponent mismatch: %s", got)
 	}
 
-	if _, err := NewDecimal128FromString("bad"); err == nil {
-		t.Fatalf("NewDecimal128FromString expected error")
+	if _, err := New128FromString("bad"); err == nil {
+		t.Fatalf("New128FromString expected error")
 	}
-	if _, err := NewDecimal128FromFloat(math.NaN()); err == nil {
-		t.Fatalf("NewDecimal128FromFloat NaN expected error")
+	if _, err := New128FromFloat(math.NaN()); err == nil {
+		t.Fatalf("New128FromFloat NaN expected error")
 	}
 }
 
@@ -115,12 +115,12 @@ func TestDecimal128Checking(t *testing.T) {
 		t.Fatalf("zero Sign mismatch")
 	}
 
-	pos := NewDecimal128FromInt(1)
+	pos := New128FromInt(1)
 	if !pos.IsPositive() || pos.IsNegative() || pos.Sign() != 1 {
 		t.Fatalf("positive sign mismatch")
 	}
 
-	neg := NewDecimal128FromInt(-1)
+	neg := New128FromInt(-1)
 	if !neg.IsNegative() || neg.IsPositive() || neg.Sign() != 2 {
 		t.Fatalf("negative sign mismatch")
 	}
@@ -236,28 +236,28 @@ func TestDecimal128Arithmetic(t *testing.T) {
 }
 
 func TestDecimal128Transcendental(t *testing.T) {
-	if got := NewDecimal128FromInt(2).Pow(NewDecimal128FromInt(3)).String(); got != "8" {
+	if got := New128FromInt(2).Pow(New128FromInt(3)).String(); got != "8" {
 		t.Fatalf("Pow mismatch: %s", got)
 	}
-	if got := NewDecimal128FromInt(2).Pow(NewDecimal128FromInt(-3)).String(); got != "0.125" {
+	if got := New128FromInt(2).Pow(New128FromInt(-3)).String(); got != "0.125" {
 		t.Fatalf("Pow negative mismatch: %s", got)
 	}
-	if got := NewDecimal128FromInt(4).Sqrt().String(); got != "2" {
+	if got := New128FromInt(4).Sqrt().String(); got != "2" {
 		t.Fatalf("Sqrt mismatch: %s", got)
 	}
-	if got := NewDecimal128FromInt(-4).Sqrt().String(); got != "-4" {
+	if got := New128FromInt(-4).Sqrt().String(); got != "-4" {
 		t.Fatalf("Sqrt negative mismatch: %s", got)
 	}
 	if got := (Decimal128{}).Exp().String(); got != "1" {
 		t.Fatalf("Exp(0) mismatch: %s", got)
 	}
-	if got := NewDecimal128FromInt(1).Log().String(); got != "0" {
+	if got := New128FromInt(1).Log().String(); got != "0" {
 		t.Fatalf("Log(1) mismatch: %s", got)
 	}
-	if got := NewDecimal128FromInt(1).Log2().String(); got != "0" {
+	if got := New128FromInt(1).Log2().String(); got != "0" {
 		t.Fatalf("Log2(1) mismatch: %s", got)
 	}
-	if got := NewDecimal128FromInt(1).Log10().String(); got != "0" {
+	if got := New128FromInt(1).Log10().String(); got != "0" {
 		t.Fatalf("Log10(1) mismatch: %s", got)
 	}
 }
@@ -271,37 +271,37 @@ func TestDecimal128EncodeDecode(t *testing.T) {
 	if len(bin) != 16 {
 		t.Fatalf("EncodeBinary length mismatch: %d", len(bin))
 	}
-	d2, err := NewDecimal128FromBinary(bin)
+	d2, err := New128FromBinary(bin)
 	if err != nil {
-		t.Fatalf("NewDecimal128FromBinary error: %v", err)
+		t.Fatalf("New128FromBinary error: %v", err)
 	}
 	if !d2.Equal(d) {
-		t.Fatalf("NewDecimal128FromBinary mismatch: %s", d2.String())
+		t.Fatalf("New128FromBinary mismatch: %s", d2.String())
 	}
-	if _, err := NewDecimal128FromBinary([]byte{1, 2, 3}); err == nil {
-		t.Fatalf("NewDecimal128FromBinary expected error")
+	if _, err := New128FromBinary([]byte{1, 2, 3}); err == nil {
+		t.Fatalf("New128FromBinary expected error")
 	}
 
 	jsonBytes, err := d.EncodeJSON()
 	if err != nil {
 		t.Fatalf("EncodeJSON error: %v", err)
 	}
-	d3, err := NewDecimal128FromJSON(jsonBytes)
+	d3, err := New128FromJSON(jsonBytes)
 	if err != nil {
-		t.Fatalf("NewDecimal128FromJSON string error: %v", err)
+		t.Fatalf("New128FromJSON string error: %v", err)
 	}
 	if !d3.Equal(d) {
-		t.Fatalf("NewDecimal128FromJSON string mismatch: %s", d3.String())
+		t.Fatalf("New128FromJSON string mismatch: %s", d3.String())
 	}
-	d4, err := NewDecimal128FromJSON([]byte("123.456"))
+	d4, err := New128FromJSON([]byte("123.456"))
 	if err != nil {
-		t.Fatalf("NewDecimal128FromJSON number error: %v", err)
+		t.Fatalf("New128FromJSON number error: %v", err)
 	}
 	if got := d4.String(); got != "123.456" {
-		t.Fatalf("NewDecimal128FromJSON number mismatch: %s", got)
+		t.Fatalf("New128FromJSON number mismatch: %s", got)
 	}
-	if _, err := NewDecimal128FromJSON([]byte("\"bad\"")); err == nil {
-		t.Fatalf("NewDecimal128FromJSON invalid expected error")
+	if _, err := New128FromJSON([]byte("\"bad\"")); err == nil {
+		t.Fatalf("New128FromJSON invalid expected error")
 	}
 }
 

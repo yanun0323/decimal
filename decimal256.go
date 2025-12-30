@@ -69,7 +69,7 @@ var (
 	constLn10 = Decimal256(u256{0x686e1a5c5b723214, 0xb5a455ec490, 0x0, 0x0})
 )
 
-// NewDecimal256 constructs a Decimal256 from integer and fractional parts.
+// New256 constructs a Decimal256 from integer and fractional parts.
 //
 // intPart keeps only the lowest 32 decimal digits (higher digits are dropped).
 // decimalPart keeps only the highest 32 fractional digits (lower digits are dropped).
@@ -78,7 +78,7 @@ var (
 // 10^32 before combining with intPart. If decimalPart has more than 32 digits, it
 // is truncated toward zero. The result is: intPart*10^32 + scaled(decimalPart),
 // with two's-complement wrap on overflow.
-func NewDecimal256(intPart, decimalPart int64) Decimal256 {
+func New256(intPart, decimalPart int64) Decimal256 {
 	ip := mul256(u256FromInt64(intPart), scale)
 	raw := lower256(ip)
 	if decimalPart != 0 {
@@ -110,13 +110,13 @@ func NewDecimal256(intPart, decimalPart int64) Decimal256 {
 	return Decimal256(applyPrecision256(raw))
 }
 
-// NewDecimal256FromString parses a decimal string with optional sign, dot, and exponent.
+// New256FromString parses a decimal string with optional sign, dot, and exponent.
 //
 // It accepts leading/trailing ASCII whitespace and optional '_' separators.
 // Exponent shifting is applied first, then integer digits beyond 32 are dropped and
 // fractional digits beyond 32 are dropped. Excess fractional digits are truncated
 // (toward zero) to the fixed 32-digit scale.
-func NewDecimal256FromString(s string) (Decimal256, error) {
+func New256FromString(s string) (Decimal256, error) {
 	u, err := parseDecimalString(s)
 	if err != nil {
 		return Decimal256{}, err
@@ -124,16 +124,16 @@ func NewDecimal256FromString(s string) (Decimal256, error) {
 	return Decimal256(u), nil
 }
 
-// NewDecimal256FromInt constructs a Decimal256 from an int64 integer value.
-func NewDecimal256FromInt(v int64) Decimal256 {
+// New256FromInt constructs a Decimal256 from an int64 integer value.
+func New256FromInt(v int64) Decimal256 {
 	p := mul256(u256FromInt64(v), scale)
 	return Decimal256(applyPrecision256(lower256(p)))
 }
 
-// NewDecimal256FromFloat converts a float64 to Decimal256 by truncating toward zero.
+// New256FromFloat converts a float64 to Decimal256 by truncating toward zero.
 //
 // NaN or Inf returns an error. Overflow wraps according to two's-complement truncation.
-func NewDecimal256FromFloat(v float64) (Decimal256, error) {
+func New256FromFloat(v float64) (Decimal256, error) {
 	if math.IsNaN(v) || math.IsInf(v, 0) {
 		return Decimal256{}, errInvalidFloat
 	}
@@ -156,10 +156,10 @@ func NewDecimal256FromFloat(v float64) (Decimal256, error) {
 	return Decimal256(u), nil
 }
 
-// NewDecimal256FromBinary decodes a 32-byte little-endian binary representation.
+// New256FromBinary decodes a 32-byte little-endian binary representation.
 //
 // Precision rules are applied after decoding.
-func NewDecimal256FromBinary(b []byte) (Decimal256, error) {
+func New256FromBinary(b []byte) (Decimal256, error) {
 	if len(b) != 32 {
 		return Decimal256{}, errInvalidBinaryLen
 	}
@@ -172,8 +172,8 @@ func NewDecimal256FromBinary(b []byte) (Decimal256, error) {
 	return Decimal256(applyPrecision256(u)), nil
 }
 
-// NewDecimal256FromJSON decodes a JSON string or number into a Decimal256.
-func NewDecimal256FromJSON(b []byte) (Decimal256, error) {
+// New256FromJSON decodes a JSON string or number into a Decimal256.
+func New256FromJSON(b []byte) (Decimal256, error) {
 	start, end := trimSpaceBytes(b)
 	if start >= end {
 		return Decimal256{}, errInvalidJSONDecimal
@@ -608,18 +608,18 @@ func (d Decimal256) Mod(other Decimal256) Decimal256 {
 // The exponent is truncated toward zero to an int64. Negative exponents use Inv().
 func (d Decimal256) Pow(other Decimal256) Decimal256 {
 	if other.IsZero() {
-		return NewDecimal256FromInt(1)
+		return New256FromInt(1)
 	}
 	trunc := other.Truncate(0)
 	exp, _ := trunc.Int64()
 	if exp == 0 {
-		return NewDecimal256FromInt(1)
+		return New256FromInt(1)
 	}
 	negExp := exp < 0
 	if negExp {
 		exp = -exp
 	}
-	result := NewDecimal256FromInt(1)
+	result := New256FromInt(1)
 	base := d
 	for exp > 0 {
 		if exp&1 == 1 {
@@ -649,9 +649,9 @@ func (d Decimal256) Sqrt() Decimal256 {
 		return d
 	}
 	guess = math.Sqrt(guess)
-	gd, err := NewDecimal256FromFloat(guess)
+	gd, err := New256FromFloat(guess)
 	if err != nil || gd.IsZero() {
-		gd = NewDecimal256FromInt(1)
+		gd = New256FromInt(1)
 	}
 	prev := gd
 	for i := 0; i < 32; i++ {
@@ -669,14 +669,14 @@ func (d Decimal256) Sqrt() Decimal256 {
 // Exp returns e^d using range reduction and a Taylor series.
 func (d Decimal256) Exp() Decimal256 {
 	if d.IsZero() {
-		return NewDecimal256FromInt(1)
+		return New256FromInt(1)
 	}
 	k := d.Div(constLn2).Round(0)
 	kInt, _ := k.Int64()
-	kLn2 := NewDecimal256FromInt(kInt).Mul(constLn2)
+	kLn2 := New256FromInt(kInt).Mul(constLn2)
 	r := d.Sub(kLn2)
 
-	term := NewDecimal256FromInt(1)
+	term := New256FromInt(1)
 	sum := term
 	for i := uint64(1); i <= 96; i++ {
 		term = term.Mul(r)
@@ -711,7 +711,7 @@ func (d Decimal256) Log() Decimal256 {
 		mScaled = shl256(u, uint(-k))
 	}
 	m := Decimal256(mScaled)
-	one := NewDecimal256FromInt(1)
+	one := New256FromInt(1)
 	mMinus := m.Sub(one)
 	mPlus := m.Add(one)
 	t := mMinus.Div(mPlus)
@@ -726,8 +726,8 @@ func (d Decimal256) Log() Decimal256 {
 		}
 		sum = sum.Add(add)
 	}
-	lnm := sum.Mul(NewDecimal256FromInt(2))
-	kLn2 := NewDecimal256FromInt(k).Mul(constLn2)
+	lnm := sum.Mul(New256FromInt(2))
+	kLn2 := New256FromInt(k).Mul(constLn2)
 	return lnm.Add(kLn2)
 }
 

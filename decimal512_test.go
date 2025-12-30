@@ -9,61 +9,61 @@ import (
 
 func mustDecimal512(t *testing.T, s string) Decimal512 {
 	t.Helper()
-	d, err := NewDecimal512FromString(s)
+	d, err := New512FromString(s)
 	if err != nil {
-		t.Fatalf("NewDecimal512FromString(%q) error: %v", s, err)
+		t.Fatalf("New512FromString(%q) error: %v", s, err)
 	}
 	return d
 }
 
 func TestDecimal512Constructors(t *testing.T) {
-	d1 := NewDecimal512(123456789, 987654321)
+	d1 := New512(123456789, 987654321)
 	if got := d1.String(); got != "123456789.987654321" {
-		t.Fatalf("NewDecimal512 string mismatch: %s", got)
+		t.Fatalf("New512 string mismatch: %s", got)
 	}
 
-	d2 := NewDecimal512FromInt(-123456789)
+	d2 := New512FromInt(-123456789)
 	if got := d2.String(); got != "-123456789" {
-		t.Fatalf("NewDecimal512FromInt string mismatch: %s", got)
+		t.Fatalf("New512FromInt string mismatch: %s", got)
 	}
 
-	d3, err := NewDecimal512FromFloat(1.25)
+	d3, err := New512FromFloat(1.25)
 	if err != nil {
-		t.Fatalf("NewDecimal512FromFloat error: %v", err)
+		t.Fatalf("New512FromFloat error: %v", err)
 	}
 	if diff := math.Abs(d3.Float64() - 1.25); diff > 1e-9 {
-		t.Fatalf("NewDecimal512FromFloat value mismatch: diff=%g", diff)
+		t.Fatalf("New512FromFloat value mismatch: diff=%g", diff)
 	}
 
-	d4, err := NewDecimal512FromString("  +1_234.4500e0 ")
+	d4, err := New512FromString("  +1_234.4500e0 ")
 	if err != nil {
-		t.Fatalf("NewDecimal512FromString error: %v", err)
+		t.Fatalf("New512FromString error: %v", err)
 	}
 	if got := d4.String(); got != "1234.45" {
-		t.Fatalf("NewDecimal512FromString string mismatch: %s", got)
+		t.Fatalf("New512FromString string mismatch: %s", got)
 	}
 
-	d5, err := NewDecimal512FromString("-.5")
+	d5, err := New512FromString("-.5")
 	if err != nil {
-		t.Fatalf("NewDecimal512FromString(-.5) error: %v", err)
+		t.Fatalf("New512FromString(-.5) error: %v", err)
 	}
 	if got := d5.String(); got != "-0.5" {
-		t.Fatalf("NewDecimal512FromString(-.5) string mismatch: %s", got)
+		t.Fatalf("New512FromString(-.5) string mismatch: %s", got)
 	}
 
-	d6, err := NewDecimal512FromString("1" + strings.Repeat("0", 65))
+	d6, err := New512FromString("1" + strings.Repeat("0", 65))
 	if err != nil {
-		t.Fatalf("NewDecimal512FromString precision error: %v", err)
+		t.Fatalf("New512FromString precision error: %v", err)
 	}
 	if got := d6.String(); got != "0" {
-		t.Fatalf("NewDecimal512 precision mismatch: %s", got)
+		t.Fatalf("New512 precision mismatch: %s", got)
 	}
 
-	if _, err := NewDecimal512FromString("bad"); err == nil {
-		t.Fatalf("NewDecimal512FromString expected error")
+	if _, err := New512FromString("bad"); err == nil {
+		t.Fatalf("New512FromString expected error")
 	}
-	if _, err := NewDecimal512FromFloat(math.NaN()); err == nil {
-		t.Fatalf("NewDecimal512FromFloat NaN expected error")
+	if _, err := New512FromFloat(math.NaN()); err == nil {
+		t.Fatalf("New512FromFloat NaN expected error")
 	}
 }
 
@@ -106,12 +106,12 @@ func TestDecimal512Checking(t *testing.T) {
 		t.Fatalf("zero Sign mismatch")
 	}
 
-	pos := NewDecimal512FromInt(1)
+	pos := New512FromInt(1)
 	if !pos.IsPositive() || pos.IsNegative() || pos.Sign() != 1 {
 		t.Fatalf("positive sign mismatch")
 	}
 
-	neg := NewDecimal512FromInt(-1)
+	neg := New512FromInt(-1)
 	if !neg.IsNegative() || neg.IsPositive() || neg.Sign() != 2 {
 		t.Fatalf("negative sign mismatch")
 	}
@@ -227,28 +227,28 @@ func TestDecimal512Arithmetic(t *testing.T) {
 }
 
 func TestDecimal512Transcendental(t *testing.T) {
-	if got := NewDecimal512FromInt(2).Pow(NewDecimal512FromInt(3)).String(); got != "8" {
+	if got := New512FromInt(2).Pow(New512FromInt(3)).String(); got != "8" {
 		t.Fatalf("Pow mismatch: %s", got)
 	}
-	if got := NewDecimal512FromInt(2).Pow(NewDecimal512FromInt(-3)).String(); got != "0.125" {
+	if got := New512FromInt(2).Pow(New512FromInt(-3)).String(); got != "0.125" {
 		t.Fatalf("Pow negative mismatch: %s", got)
 	}
-	if got := NewDecimal512FromInt(4).Sqrt().String(); got != "2" {
+	if got := New512FromInt(4).Sqrt().String(); got != "2" {
 		t.Fatalf("Sqrt mismatch: %s", got)
 	}
-	if got := NewDecimal512FromInt(-4).Sqrt().String(); got != "-4" {
+	if got := New512FromInt(-4).Sqrt().String(); got != "-4" {
 		t.Fatalf("Sqrt negative mismatch: %s", got)
 	}
 	if got := (Decimal512{}).Exp().String(); got != "1" {
 		t.Fatalf("Exp(0) mismatch: %s", got)
 	}
-	if got := NewDecimal512FromInt(1).Log().String(); got != "0" {
+	if got := New512FromInt(1).Log().String(); got != "0" {
 		t.Fatalf("Log(1) mismatch: %s", got)
 	}
-	if got := NewDecimal512FromInt(1).Log2().String(); got != "0" {
+	if got := New512FromInt(1).Log2().String(); got != "0" {
 		t.Fatalf("Log2(1) mismatch: %s", got)
 	}
-	if got := NewDecimal512FromInt(1).Log10().String(); got != "0" {
+	if got := New512FromInt(1).Log10().String(); got != "0" {
 		t.Fatalf("Log10(1) mismatch: %s", got)
 	}
 }
@@ -262,37 +262,37 @@ func TestDecimal512EncodeDecode(t *testing.T) {
 	if len(bin) != 64 {
 		t.Fatalf("EncodeBinary length mismatch: %d", len(bin))
 	}
-	d2, err := NewDecimal512FromBinary(bin)
+	d2, err := New512FromBinary(bin)
 	if err != nil {
-		t.Fatalf("NewDecimal512FromBinary error: %v", err)
+		t.Fatalf("New512FromBinary error: %v", err)
 	}
 	if !d2.Equal(d) {
-		t.Fatalf("NewDecimal512FromBinary mismatch: %s", d2.String())
+		t.Fatalf("New512FromBinary mismatch: %s", d2.String())
 	}
-	if _, err := NewDecimal512FromBinary([]byte{1, 2, 3}); err == nil {
-		t.Fatalf("NewDecimal512FromBinary expected error")
+	if _, err := New512FromBinary([]byte{1, 2, 3}); err == nil {
+		t.Fatalf("New512FromBinary expected error")
 	}
 
 	jsonBytes, err := d.EncodeJSON()
 	if err != nil {
 		t.Fatalf("EncodeJSON error: %v", err)
 	}
-	d3, err := NewDecimal512FromJSON(jsonBytes)
+	d3, err := New512FromJSON(jsonBytes)
 	if err != nil {
-		t.Fatalf("NewDecimal512FromJSON string error: %v", err)
+		t.Fatalf("New512FromJSON string error: %v", err)
 	}
 	if !d3.Equal(d) {
-		t.Fatalf("NewDecimal512FromJSON string mismatch: %s", d3.String())
+		t.Fatalf("New512FromJSON string mismatch: %s", d3.String())
 	}
-	d4, err := NewDecimal512FromJSON([]byte("123.456"))
+	d4, err := New512FromJSON([]byte("123.456"))
 	if err != nil {
-		t.Fatalf("NewDecimal512FromJSON number error: %v", err)
+		t.Fatalf("New512FromJSON number error: %v", err)
 	}
 	if got := d4.String(); got != "123.456" {
-		t.Fatalf("NewDecimal512FromJSON number mismatch: %s", got)
+		t.Fatalf("New512FromJSON number mismatch: %s", got)
 	}
-	if _, err := NewDecimal512FromJSON([]byte("\"bad\"")); err == nil {
-		t.Fatalf("NewDecimal512FromJSON invalid expected error")
+	if _, err := New512FromJSON([]byte("\"bad\"")); err == nil {
+		t.Fatalf("New512FromJSON invalid expected error")
 	}
 }
 

@@ -49,27 +49,33 @@ import "github.com/yanun0323/decimal"
 
 字串/JSON 解析會**先套用指數位移**，再套用精度規則。
 
+## 預設值
+
+- `Zero128`, `One128`, `Ten128`, `Hundred128`
+- `Zero256`, `One256`, `Ten256`, `Hundred256`
+- `Zero512`, `One512`, `Ten512`, `Hundred512`
+
 ## 建構子（各型別共用）
 
 將 `XXX` 取代為 `128`、`256` 或 `512`：
 
-- `NewDecimalXXX(intPart, decimalPart int64) DecimalXXX`
+- `NewXXX(intPart, decimalPart int64) DecimalXXX`
   - `decimalPart` 視為小數位數字。
-  - 例：`NewDecimal256(123, 45)` = `123.45`。
+  - 例：`New256(123, 45)` = `123.45`。
   - 小數位超過尺度會被向 0 截斷。
   - 套用精度規則（整數低 *N*、小數高 *N*）。
-- `NewDecimalXXXFromString(string) (DecimalXXX, error)`
+- `NewXXXFromString(string) (DecimalXXX, error)`
   - 支援前後空白、`_` 分隔、`.` 小數點與 `e/E` 指數。
   - 先套用指數位移，再套用精度規則。
-- `NewDecimalXXXFromInt(int64) DecimalXXX`
+- `NewXXXFromInt(int64) DecimalXXX`
   - 套用精度規則（整數低 *N*）。
-- `NewDecimalXXXFromFloat(float64) (DecimalXXX, error)`
+- `NewXXXFromFloat(float64) (DecimalXXX, error)`
   - 向 0 截斷，`NaN/Inf` 回傳錯誤。
   - 轉換後套用精度規則。
-- `NewDecimalXXXFromBinary([]byte) (DecimalXXX, error)`
+- `NewXXXFromBinary([]byte) (DecimalXXX, error)`
   - 固定長度，小端序（見 Binary 章節）。
   - 解碼後套用精度規則。
-- `NewDecimalXXXFromJSON([]byte) (DecimalXXX, error)`
+- `NewXXXFromJSON([]byte) (DecimalXXX, error)`
   - 接受 JSON **字串**或**數字**。
   - 先套用指數位移，再套用精度規則。
 
@@ -129,6 +135,17 @@ import "github.com/yanun0323/decimal"
   - `Decimal256`：32 bytes
   - `Decimal512`：64 bytes
 - **JSON**：輸出字串；解析接受字串或數字
+
+## 資料庫整合
+
+- SQL（`database/sql`）
+  - 實作 `sql.Scanner` 與 `driver.Valuer`
+  - `Scan` 接受 `string`、`[]byte`、`int64`、`float64` 與 `NULL`（NULL 會變成零值）
+  - `Value` 回傳十進位字串
+- MongoDB Go Driver v2（`go.mongodb.org/mongo-driver/v2`）
+  - 實作 `bson.ValueMarshaler` / `bson.ValueUnmarshaler`
+  - `Decimal128` 會編碼為 BSON Decimal128
+  - `Decimal256` / `Decimal512` 會編碼為 BSON 字串
 
 ## 泛型介面
 

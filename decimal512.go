@@ -38,7 +38,7 @@ var (
 	constLn10_512 = Decimal512(u512x{0xea71dc1617d12f21, 0xdbb8f1138566b86c, 0xafb42c6b2c8625b2, 0x000000000037f905, 0x0, 0x0, 0x0, 0x0})
 )
 
-// NewDecimal512 constructs a Decimal512 from integer and fractional parts.
+// New512 constructs a Decimal512 from integer and fractional parts.
 //
 // intPart keeps only the lowest 64 decimal digits (higher digits are dropped).
 // decimalPart keeps only the highest 64 fractional digits (lower digits are dropped).
@@ -47,7 +47,7 @@ var (
 // 10^64 before combining with intPart. If decimalPart has more than 64 digits, it
 // is truncated toward zero. The result is: intPart*10^64 + scaled(decimalPart),
 // with two's-complement wrap on overflow.
-func NewDecimal512(intPart, decimalPart int64) Decimal512 {
+func New512(intPart, decimalPart int64) Decimal512 {
 	ip := mul512(u512FromInt64(intPart), scale512)
 	raw := lower512(ip)
 	if decimalPart != 0 {
@@ -79,13 +79,13 @@ func NewDecimal512(intPart, decimalPart int64) Decimal512 {
 	return Decimal512(applyPrecision512(raw))
 }
 
-// NewDecimal512FromString parses a decimal string with optional sign, dot, and exponent.
+// New512FromString parses a decimal string with optional sign, dot, and exponent.
 //
 // It accepts leading/trailing ASCII whitespace and optional '_' separators.
 // Exponent shifting is applied first, then integer digits beyond 64 are dropped and
 // fractional digits beyond 64 are dropped. Excess fractional digits are truncated
 // (toward zero) to the fixed 64-digit scale.
-func NewDecimal512FromString(s string) (Decimal512, error) {
+func New512FromString(s string) (Decimal512, error) {
 	u, err := parseDecimalString512(s)
 	if err != nil {
 		return Decimal512{}, err
@@ -93,16 +93,16 @@ func NewDecimal512FromString(s string) (Decimal512, error) {
 	return Decimal512(u), nil
 }
 
-// NewDecimal512FromInt constructs a Decimal512 from an int64 integer value.
-func NewDecimal512FromInt(v int64) Decimal512 {
+// New512FromInt constructs a Decimal512 from an int64 integer value.
+func New512FromInt(v int64) Decimal512 {
 	p := mul512(u512FromInt64(v), scale512)
 	return Decimal512(applyPrecision512(lower512(p)))
 }
 
-// NewDecimal512FromFloat converts a float64 to Decimal512 by truncating toward zero.
+// New512FromFloat converts a float64 to Decimal512 by truncating toward zero.
 //
 // NaN or Inf returns an error. Overflow wraps according to two's-complement truncation.
-func NewDecimal512FromFloat(v float64) (Decimal512, error) {
+func New512FromFloat(v float64) (Decimal512, error) {
 	if math.IsNaN(v) || math.IsInf(v, 0) {
 		return Decimal512{}, errInvalidFloat
 	}
@@ -533,18 +533,18 @@ func (d Decimal512) Mod(other Decimal512) Decimal512 {
 // The exponent is truncated toward zero to an int64. Negative exponents use Inv().
 func (d Decimal512) Pow(other Decimal512) Decimal512 {
 	if other.IsZero() {
-		return NewDecimal512FromInt(1)
+		return New512FromInt(1)
 	}
 	trunc := other.Truncate(0)
 	exp, _ := trunc.Int64()
 	if exp == 0 {
-		return NewDecimal512FromInt(1)
+		return New512FromInt(1)
 	}
 	negExp := exp < 0
 	if negExp {
 		exp = -exp
 	}
-	result := NewDecimal512FromInt(1)
+	result := New512FromInt(1)
 	base := d
 	for exp > 0 {
 		if exp&1 == 1 {
@@ -574,9 +574,9 @@ func (d Decimal512) Sqrt() Decimal512 {
 		return d
 	}
 	guess = math.Sqrt(guess)
-	gd, err := NewDecimal512FromFloat(guess)
+	gd, err := New512FromFloat(guess)
 	if err != nil || gd.IsZero() {
-		gd = NewDecimal512FromInt(1)
+		gd = New512FromInt(1)
 	}
 	prev := gd
 	for i := 0; i < 32; i++ {
@@ -594,14 +594,14 @@ func (d Decimal512) Sqrt() Decimal512 {
 // Exp returns e^d using range reduction and a Taylor series.
 func (d Decimal512) Exp() Decimal512 {
 	if d.IsZero() {
-		return NewDecimal512FromInt(1)
+		return New512FromInt(1)
 	}
 	k := d.Div(constLn2_512).Round(0)
 	kInt, _ := k.Int64()
-	kLn2 := NewDecimal512FromInt(kInt).Mul(constLn2_512)
+	kLn2 := New512FromInt(kInt).Mul(constLn2_512)
 	r := d.Sub(kLn2)
 
-	term := NewDecimal512FromInt(1)
+	term := New512FromInt(1)
 	sum := term
 	for i := uint64(1); i <= 96; i++ {
 		term = term.Mul(r)
@@ -636,7 +636,7 @@ func (d Decimal512) Log() Decimal512 {
 		mScaled = shl512(u, uint(-k))
 	}
 	m := Decimal512(mScaled)
-	one := NewDecimal512FromInt(1)
+	one := New512FromInt(1)
 	mMinus := m.Sub(one)
 	mPlus := m.Add(one)
 	t := mMinus.Div(mPlus)
@@ -651,8 +651,8 @@ func (d Decimal512) Log() Decimal512 {
 		}
 		sum = sum.Add(add)
 	}
-	lnm := sum.Mul(NewDecimal512FromInt(2))
-	kLn2 := NewDecimal512FromInt(k).Mul(constLn2_512)
+	lnm := sum.Mul(New512FromInt(2))
+	kLn2 := New512FromInt(k).Mul(constLn2_512)
 	return lnm.Add(kLn2)
 }
 
@@ -696,10 +696,10 @@ func (d Decimal512) AppendBinary(dst []byte) []byte {
 	return append(dst, out[:]...)
 }
 
-// NewDecimal512FromBinary decodes a 64-byte little-endian binary representation.
+// New512FromBinary decodes a 64-byte little-endian binary representation.
 //
 // Precision rules are applied after decoding.
-func NewDecimal512FromBinary(b []byte) (Decimal512, error) {
+func New512FromBinary(b []byte) (Decimal512, error) {
 	if len(b) != 64 {
 		return Decimal512{}, errInvalidBinaryLen
 	}
@@ -725,8 +725,8 @@ func (d Decimal512) AppendJSON(dst []byte) []byte {
 	return append(dst, '"')
 }
 
-// NewDecimal512FromJSON decodes a JSON string or number into a Decimal512.
-func NewDecimal512FromJSON(b []byte) (Decimal512, error) {
+// New512FromJSON decodes a JSON string or number into a Decimal512.
+func New512FromJSON(b []byte) (Decimal512, error) {
 	start, end := trimSpaceBytes(b)
 	if start >= end {
 		return Decimal512{}, errInvalidJSONDecimal

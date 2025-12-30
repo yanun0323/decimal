@@ -40,7 +40,7 @@ var (
 	constLn10_128 = Decimal128(u128{0x0051cde3b15487e8, 0x0000000000000000})
 )
 
-// NewDecimal128 constructs a Decimal128 from integer and fractional parts.
+// New128 constructs a Decimal128 from integer and fractional parts.
 //
 // intPart keeps only the lowest 16 decimal digits (higher digits are dropped).
 // decimalPart keeps only the highest 16 fractional digits (lower digits are dropped).
@@ -49,7 +49,7 @@ var (
 // 10^16 before combining with intPart. If decimalPart has more than 16 digits, it
 // is truncated toward zero. The result is: intPart*10^16 + scaled(decimalPart),
 // with two's-complement wrap on overflow.
-func NewDecimal128(intPart, decimalPart int64) Decimal128 {
+func New128(intPart, decimalPart int64) Decimal128 {
 	intPart = truncateIntPart128(intPart)
 	decimalPart = truncateDecimalPart128(decimalPart)
 	ip := mul128(u128FromInt64(intPart), scale128)
@@ -83,13 +83,13 @@ func NewDecimal128(intPart, decimalPart int64) Decimal128 {
 	return Decimal128(applyPrecision128(raw))
 }
 
-// NewDecimal128FromString parses a decimal string with optional sign, dot, and exponent.
+// New128FromString parses a decimal string with optional sign, dot, and exponent.
 //
 // It accepts leading/trailing ASCII whitespace and optional '_' separators.
 // Exponent shifting is applied first, then integer digits beyond 16 are dropped and
 // fractional digits beyond 16 are dropped. Excess fractional digits are truncated
 // (toward zero) to the fixed 16-digit scale.
-func NewDecimal128FromString(s string) (Decimal128, error) {
+func New128FromString(s string) (Decimal128, error) {
 	u, err := parseDecimalString128(s)
 	if err != nil {
 		return Decimal128{}, err
@@ -97,21 +97,21 @@ func NewDecimal128FromString(s string) (Decimal128, error) {
 	return Decimal128(u), nil
 }
 
-// NewDecimal128FromInt constructs a Decimal128 from an int64 integer value.
+// New128FromInt constructs a Decimal128 from an int64 integer value.
 //
 // Only the lowest 16 decimal digits are kept.
-func NewDecimal128FromInt(v int64) Decimal128 {
+func New128FromInt(v int64) Decimal128 {
 	v = truncateIntPart128(v)
 	p := mul128(u128FromInt64(v), scale128)
 	return Decimal128(applyPrecision128(lower128(p)))
 }
 
-// NewDecimal128FromFloat converts a float64 to Decimal128 by truncating toward zero.
+// New128FromFloat converts a float64 to Decimal128 by truncating toward zero.
 //
 // The integer part keeps only the lowest 16 decimal digits. The fractional part
 // keeps only the highest 16 digits (closest to the decimal point).
 // NaN or Inf returns an error. Overflow wraps according to two's-complement truncation.
-func NewDecimal128FromFloat(v float64) (Decimal128, error) {
+func New128FromFloat(v float64) (Decimal128, error) {
 	if math.IsNaN(v) || math.IsInf(v, 0) {
 		return Decimal128{}, errInvalidFloat
 	}
@@ -551,18 +551,18 @@ func (d Decimal128) Mod(other Decimal128) Decimal128 {
 // The exponent is truncated toward zero to an int64. Negative exponents use Inv().
 func (d Decimal128) Pow(other Decimal128) Decimal128 {
 	if other.IsZero() {
-		return NewDecimal128FromInt(1)
+		return New128FromInt(1)
 	}
 	trunc := other.Truncate(0)
 	exp, _ := trunc.Int64()
 	if exp == 0 {
-		return NewDecimal128FromInt(1)
+		return New128FromInt(1)
 	}
 	negExp := exp < 0
 	if negExp {
 		exp = -exp
 	}
-	result := NewDecimal128FromInt(1)
+	result := New128FromInt(1)
 	base := d
 	for exp > 0 {
 		if exp&1 == 1 {
@@ -592,9 +592,9 @@ func (d Decimal128) Sqrt() Decimal128 {
 		return d
 	}
 	guess = math.Sqrt(guess)
-	gd, err := NewDecimal128FromFloat(guess)
+	gd, err := New128FromFloat(guess)
 	if err != nil || gd.IsZero() {
-		gd = NewDecimal128FromInt(1)
+		gd = New128FromInt(1)
 	}
 	prev := gd
 	for i := 0; i < 32; i++ {
@@ -612,14 +612,14 @@ func (d Decimal128) Sqrt() Decimal128 {
 // Exp returns e^d using range reduction and a Taylor series.
 func (d Decimal128) Exp() Decimal128 {
 	if d.IsZero() {
-		return NewDecimal128FromInt(1)
+		return New128FromInt(1)
 	}
 	k := d.Div(constLn2_128).Round(0)
 	kInt, _ := k.Int64()
-	kLn2 := NewDecimal128FromInt(kInt).Mul(constLn2_128)
+	kLn2 := New128FromInt(kInt).Mul(constLn2_128)
 	r := d.Sub(kLn2)
 
-	term := NewDecimal128FromInt(1)
+	term := New128FromInt(1)
 	sum := term
 	for i := uint64(1); i <= 96; i++ {
 		term = term.Mul(r)
@@ -654,7 +654,7 @@ func (d Decimal128) Log() Decimal128 {
 		mScaled = shl128(u, uint(-k))
 	}
 	m := Decimal128(mScaled)
-	one := NewDecimal128FromInt(1)
+	one := New128FromInt(1)
 	mMinus := m.Sub(one)
 	mPlus := m.Add(one)
 	t := mMinus.Div(mPlus)
@@ -669,8 +669,8 @@ func (d Decimal128) Log() Decimal128 {
 		}
 		sum = sum.Add(add)
 	}
-	lnm := sum.Mul(NewDecimal128FromInt(2))
-	kLn2 := NewDecimal128FromInt(k).Mul(constLn2_128)
+	lnm := sum.Mul(New128FromInt(2))
+	kLn2 := New128FromInt(k).Mul(constLn2_128)
 	return lnm.Add(kLn2)
 }
 
@@ -712,10 +712,10 @@ func (d Decimal128) AppendBinary(dst []byte) []byte {
 	return append(dst, out[:]...)
 }
 
-// NewDecimal128FromBinary decodes a 16-byte little-endian binary representation.
+// New128FromBinary decodes a 16-byte little-endian binary representation.
 //
 // Precision rules are applied after decoding.
-func NewDecimal128FromBinary(b []byte) (Decimal128, error) {
+func New128FromBinary(b []byte) (Decimal128, error) {
 	if len(b) != 16 {
 		return Decimal128{}, errInvalidBinaryLen
 	}
@@ -741,8 +741,8 @@ func (d Decimal128) AppendJSON(dst []byte) []byte {
 	return append(dst, '"')
 }
 
-// NewDecimal128FromJSON decodes a JSON string or number into a Decimal128.
-func NewDecimal128FromJSON(b []byte) (Decimal128, error) {
+// New128FromJSON decodes a JSON string or number into a Decimal128.
+func New128FromJSON(b []byte) (Decimal128, error) {
 	start, end := trimSpaceBytes(b)
 	if start >= end {
 		return Decimal128{}, errInvalidJSONDecimal

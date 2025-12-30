@@ -8,61 +8,61 @@ import (
 
 func mustDecimal(t *testing.T, s string) Decimal256 {
 	t.Helper()
-	d, err := NewDecimal256FromString(s)
+	d, err := New256FromString(s)
 	if err != nil {
-		t.Fatalf("NewDecimal256FromString(%q) error: %v", s, err)
+		t.Fatalf("New256FromString(%q) error: %v", s, err)
 	}
 	return d
 }
 
 func TestDecimal256Constructors(t *testing.T) {
-	d1 := NewDecimal256(123456789, 987654321)
+	d1 := New256(123456789, 987654321)
 	if got := d1.String(); got != "123456789.987654321" {
-		t.Fatalf("NewDecimal256 string mismatch: %s", got)
+		t.Fatalf("New256 string mismatch: %s", got)
 	}
 
-	d2 := NewDecimal256FromInt(-123456789)
+	d2 := New256FromInt(-123456789)
 	if got := d2.String(); got != "-123456789" {
-		t.Fatalf("NewDecimal256FromInt string mismatch: %s", got)
+		t.Fatalf("New256FromInt string mismatch: %s", got)
 	}
 
-	d3, err := NewDecimal256FromFloat(1.25)
+	d3, err := New256FromFloat(1.25)
 	if err != nil {
-		t.Fatalf("NewDecimal256FromFloat error: %v", err)
+		t.Fatalf("New256FromFloat error: %v", err)
 	}
 	if diff := math.Abs(d3.Float64() - 1.25); diff > 1e-9 {
-		t.Fatalf("NewDecimal256FromFloat value mismatch: diff=%g", diff)
+		t.Fatalf("New256FromFloat value mismatch: diff=%g", diff)
 	}
 
-	d4, err := NewDecimal256FromString("  +1_234.4500e0 ")
+	d4, err := New256FromString("  +1_234.4500e0 ")
 	if err != nil {
-		t.Fatalf("NewDecimal256FromString error: %v", err)
+		t.Fatalf("New256FromString error: %v", err)
 	}
 	if got := d4.String(); got != "1234.45" {
-		t.Fatalf("NewDecimal256FromString string mismatch: %s", got)
+		t.Fatalf("New256FromString string mismatch: %s", got)
 	}
 
-	d5, err := NewDecimal256FromString("-.5")
+	d5, err := New256FromString("-.5")
 	if err != nil {
-		t.Fatalf("NewDecimal256FromString(-.5) error: %v", err)
+		t.Fatalf("New256FromString(-.5) error: %v", err)
 	}
 	if got := d5.String(); got != "-0.5" {
-		t.Fatalf("NewDecimal256FromString(-.5) string mismatch: %s", got)
+		t.Fatalf("New256FromString(-.5) string mismatch: %s", got)
 	}
 
-	d6, err := NewDecimal256FromString("12345678901234567890123456789012345")
+	d6, err := New256FromString("12345678901234567890123456789012345")
 	if err != nil {
-		t.Fatalf("NewDecimal256FromString precision error: %v", err)
+		t.Fatalf("New256FromString precision error: %v", err)
 	}
 	if got := d6.String(); got != "45678901234567890123456789012345" {
-		t.Fatalf("NewDecimal256 precision mismatch: %s", got)
+		t.Fatalf("New256 precision mismatch: %s", got)
 	}
 
-	if _, err := NewDecimal256FromString("bad"); err == nil {
-		t.Fatalf("NewDecimal256FromString expected error")
+	if _, err := New256FromString("bad"); err == nil {
+		t.Fatalf("New256FromString expected error")
 	}
-	if _, err := NewDecimal256FromFloat(math.NaN()); err == nil {
-		t.Fatalf("NewDecimal256FromFloat NaN expected error")
+	if _, err := New256FromFloat(math.NaN()); err == nil {
+		t.Fatalf("New256FromFloat NaN expected error")
 	}
 }
 
@@ -105,12 +105,12 @@ func TestDecimal256Checking(t *testing.T) {
 		t.Fatalf("zero Sign mismatch")
 	}
 
-	pos := NewDecimal256FromInt(1)
+	pos := New256FromInt(1)
 	if !pos.IsPositive() || pos.IsNegative() || pos.Sign() != 1 {
 		t.Fatalf("positive sign mismatch")
 	}
 
-	neg := NewDecimal256FromInt(-1)
+	neg := New256FromInt(-1)
 	if !neg.IsNegative() || neg.IsPositive() || neg.Sign() != 2 {
 		t.Fatalf("negative sign mismatch")
 	}
@@ -208,13 +208,13 @@ func TestDecimal256Arithmetic(t *testing.T) {
 	if got := b.Sub(a).String(); got != "0.75" {
 		t.Fatalf("Sub mismatch: %s", got)
 	}
-	if got := a.Mul(NewDecimal256FromInt(2)).String(); got != "3" {
+	if got := a.Mul(New256FromInt(2)).String(); got != "3" {
 		t.Fatalf("Mul mismatch: %s", got)
 	}
-	if got := mustDecimal(t, "3").Div(NewDecimal256FromInt(2)).String(); got != "1.5" {
+	if got := mustDecimal(t, "3").Div(New256FromInt(2)).String(); got != "1.5" {
 		t.Fatalf("Div mismatch: %s", got)
 	}
-	if got := mustDecimal(t, "5.5").Mod(NewDecimal256FromInt(2)).String(); got != "1.5" {
+	if got := mustDecimal(t, "5.5").Mod(New256FromInt(2)).String(); got != "1.5" {
 		t.Fatalf("Mod mismatch: %s", got)
 	}
 	if got := a.Div(Decimal256{}).String(); got != "1.5" {
@@ -226,28 +226,28 @@ func TestDecimal256Arithmetic(t *testing.T) {
 }
 
 func TestDecimal256Transcendental(t *testing.T) {
-	if got := NewDecimal256FromInt(2).Pow(NewDecimal256FromInt(3)).String(); got != "8" {
+	if got := New256FromInt(2).Pow(New256FromInt(3)).String(); got != "8" {
 		t.Fatalf("Pow mismatch: %s", got)
 	}
-	if got := NewDecimal256FromInt(2).Pow(NewDecimal256FromInt(-3)).String(); got != "0.125" {
+	if got := New256FromInt(2).Pow(New256FromInt(-3)).String(); got != "0.125" {
 		t.Fatalf("Pow negative mismatch: %s", got)
 	}
-	if got := NewDecimal256FromInt(4).Sqrt().String(); got != "2" {
+	if got := New256FromInt(4).Sqrt().String(); got != "2" {
 		t.Fatalf("Sqrt mismatch: %s", got)
 	}
-	if got := NewDecimal256FromInt(-4).Sqrt().String(); got != "-4" {
+	if got := New256FromInt(-4).Sqrt().String(); got != "-4" {
 		t.Fatalf("Sqrt negative mismatch: %s", got)
 	}
 	if got := (Decimal256{}).Exp().String(); got != "1" {
 		t.Fatalf("Exp(0) mismatch: %s", got)
 	}
-	if got := NewDecimal256FromInt(1).Log().String(); got != "0" {
+	if got := New256FromInt(1).Log().String(); got != "0" {
 		t.Fatalf("Log(1) mismatch: %s", got)
 	}
-	if got := NewDecimal256FromInt(1).Log2().String(); got != "0" {
+	if got := New256FromInt(1).Log2().String(); got != "0" {
 		t.Fatalf("Log2(1) mismatch: %s", got)
 	}
-	if got := NewDecimal256FromInt(1).Log10().String(); got != "0" {
+	if got := New256FromInt(1).Log10().String(); got != "0" {
 		t.Fatalf("Log10(1) mismatch: %s", got)
 	}
 }
@@ -261,37 +261,37 @@ func TestDecimal256EncodeDecode(t *testing.T) {
 	if len(bin) != 32 {
 		t.Fatalf("EncodeBinary length mismatch: %d", len(bin))
 	}
-	d2, err := NewDecimal256FromBinary(bin)
+	d2, err := New256FromBinary(bin)
 	if err != nil {
-		t.Fatalf("NewDecimal256FromBinary error: %v", err)
+		t.Fatalf("New256FromBinary error: %v", err)
 	}
 	if !d2.Equal(d) {
-		t.Fatalf("NewDecimal256FromBinary mismatch: %s", d2.String())
+		t.Fatalf("New256FromBinary mismatch: %s", d2.String())
 	}
-	if _, err := NewDecimal256FromBinary([]byte{1, 2, 3}); err == nil {
-		t.Fatalf("NewDecimal256FromBinary expected error")
+	if _, err := New256FromBinary([]byte{1, 2, 3}); err == nil {
+		t.Fatalf("New256FromBinary expected error")
 	}
 
 	jsonBytes, err := d.EncodeJSON()
 	if err != nil {
 		t.Fatalf("EncodeJSON error: %v", err)
 	}
-	d3, err := NewDecimal256FromJSON(jsonBytes)
+	d3, err := New256FromJSON(jsonBytes)
 	if err != nil {
-		t.Fatalf("NewDecimal256FromJSON string error: %v", err)
+		t.Fatalf("New256FromJSON string error: %v", err)
 	}
 	if !d3.Equal(d) {
-		t.Fatalf("NewDecimal256FromJSON string mismatch: %s", d3.String())
+		t.Fatalf("New256FromJSON string mismatch: %s", d3.String())
 	}
-	d4, err := NewDecimal256FromJSON([]byte("123.456"))
+	d4, err := New256FromJSON([]byte("123.456"))
 	if err != nil {
-		t.Fatalf("NewDecimal256FromJSON number error: %v", err)
+		t.Fatalf("New256FromJSON number error: %v", err)
 	}
 	if got := d4.String(); got != "123.456" {
-		t.Fatalf("NewDecimal256FromJSON number mismatch: %s", got)
+		t.Fatalf("New256FromJSON number mismatch: %s", got)
 	}
-	if _, err := NewDecimal256FromJSON([]byte("\"bad\"")); err == nil {
-		t.Fatalf("NewDecimal256FromJSON invalid expected error")
+	if _, err := New256FromJSON([]byte("\"bad\"")); err == nil {
+		t.Fatalf("New256FromJSON invalid expected error")
 	}
 }
 

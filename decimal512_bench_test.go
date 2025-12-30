@@ -5,7 +5,7 @@ import "testing"
 var (
 	benchD512   = mustDecimal512Bench("123456789.987654321")
 	benchD512b  = mustDecimal512Bench("-987654321.123456789")
-	benchD512c  = NewDecimal512FromInt(2)
+	benchD512c  = New512FromInt(2)
 	benchBin512 = func() []byte {
 		b, _ := benchD512.EncodeBinary()
 		return b
@@ -22,7 +22,7 @@ var (
 )
 
 func mustDecimal512Bench(s string) Decimal512 {
-	d, err := NewDecimal512FromString(s)
+	d, err := New512FromString(s)
 	if err != nil {
 		panic(err)
 	}
@@ -30,24 +30,24 @@ func mustDecimal512Bench(s string) Decimal512 {
 }
 
 func BenchmarkDecimal512_Constructors(b *testing.B) {
-	b.Run("NewDecimal512", func(b *testing.B) {
+	b.Run("New512", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal512 = NewDecimal512(123456789, 987654321)
+			benchSinkDecimal512 = New512(123456789, 987654321)
 		}
 	})
-	b.Run("NewDecimal512FromString", func(b *testing.B) {
+	b.Run("New512FromString", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal512, benchSinkErr = NewDecimal512FromString("123456789.987654321")
+			benchSinkDecimal512, benchSinkErr = New512FromString("123456789.987654321")
 		}
 	})
-	b.Run("NewDecimal512FromInt", func(b *testing.B) {
+	b.Run("New512FromInt", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal512 = NewDecimal512FromInt(123456789)
+			benchSinkDecimal512 = New512FromInt(123456789)
 		}
 	})
-	b.Run("NewDecimal512FromFloat", func(b *testing.B) {
+	b.Run("New512FromFloat", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal512, benchSinkErr = NewDecimal512FromFloat(12345.5)
+			benchSinkDecimal512, benchSinkErr = New512FromFloat(12345.5)
 		}
 	})
 }
@@ -255,7 +255,7 @@ func BenchmarkDecimal512_EncodeDecode(b *testing.B) {
 	})
 	b.Run("NewFromBinary", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal512, benchSinkErr = NewDecimal512FromBinary(benchBin512)
+			benchSinkDecimal512, benchSinkErr = New512FromBinary(benchBin512)
 		}
 	})
 	b.Run("EncodeJSON", func(b *testing.B) {
@@ -271,7 +271,7 @@ func BenchmarkDecimal512_EncodeDecode(b *testing.B) {
 	})
 	b.Run("NewFromJSON", func(b *testing.B) {
 		for b.Loop() {
-			benchSinkDecimal512, benchSinkErr = NewDecimal512FromJSON(benchJSON512)
+			benchSinkDecimal512, benchSinkErr = New512FromJSON(benchJSON512)
 		}
 	})
 	b.Run("AppendString", func(b *testing.B) {
