@@ -47,4 +47,12 @@ type Decimal interface {
 	Log() Decimal
 	Log2() Decimal
 	Log10() Decimal
+
+	// normalized
+	EncodeBinary() ([]byte, error)
+	EncodeJSON() ([]byte, error)
+	AppendBinary([]byte) []byte
+	AppendJSON([]byte) []byte
+	AppendString([]byte) []byte
+	AppendStringFixed([]byte, int) []byte
 }
