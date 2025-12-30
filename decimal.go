@@ -1,12 +1,14 @@
 package decimal
 
 var _ Decimal[Decimal128] = (*Decimal128)(nil)
+var _ Decimal[Decimal256] = (*Decimal256)(nil)
+var _ Decimal[Decimal512] = (*Decimal512)(nil)
 
 type decimal interface {
 	Decimal128 | Decimal256 | Decimal512
 }
 
-// Don't use this. just for definition.
+// Definition represents an interface for compile-time constraints
 type Decimal[T decimal] interface {
 	// conversions
 	Int64() (intPart, decimalPart int64)
