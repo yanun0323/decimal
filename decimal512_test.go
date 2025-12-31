@@ -51,7 +51,7 @@ func TestDecimal512Constructors(t *testing.T) {
 		t.Fatalf("New512FromString(-.5) string mismatch: %s", got)
 	}
 
-	d6, err := New512FromString("1" + strings.Repeat("0", 65))
+	d6, err := New512FromString("1" + strings.Repeat("0", 77))
 	if err != nil {
 		t.Fatalf("New512FromString precision error: %v", err)
 	}
@@ -85,8 +85,8 @@ func TestDecimal512Conversions(t *testing.T) {
 	if got := d2.StringFixed(0); got != "1" {
 		t.Fatalf("StringFixed(0) mismatch: %s", got)
 	}
-	if got64, got80 := d2.StringFixed(64), d2.StringFixed(80); got64 != got80 {
-		t.Fatalf("StringFixed n>64 mismatch: %s vs %s", got64, got80)
+	if got77, got85 := d2.StringFixed(77), d2.StringFixed(85); got77 != got85 {
+		t.Fatalf("StringFixed n>77 mismatch: %s vs %s", got77, got85)
 	}
 
 	if diff := math.Abs(d2.Float64() - 1.2); diff > 1e-9 {
@@ -135,11 +135,11 @@ func TestDecimal512Modification(t *testing.T) {
 	if got := mustDecimal512(t, "123.45").Truncate(-1).String(); got != "120" {
 		t.Fatalf("Truncate negative mismatch: %s", got)
 	}
-	if got := mustDecimal512(t, "1.23").Truncate(65); !got.Equal(mustDecimal512(t, "1.23")) {
-		t.Fatalf("Truncate n>64 mismatch: %s", got.String())
+	if got := mustDecimal512(t, "1.23").Truncate(78); !got.Equal(mustDecimal512(t, "1.23")) {
+		t.Fatalf("Truncate n>77 mismatch: %s", got.String())
 	}
-	if got := mustDecimal512(t, "1.23").Truncate(-65); !got.IsZero() {
-		t.Fatalf("Truncate n<-64 mismatch: %s", got.String())
+	if got := mustDecimal512(t, "1.23").Truncate(-78); !got.IsZero() {
+		t.Fatalf("Truncate n<-77 mismatch: %s", got.String())
 	}
 
 	if got := mustDecimal512(t, "1.23").Shift(1).String(); got != "12.3" {

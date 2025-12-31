@@ -20,9 +20,9 @@ import "github.com/yanun0323/decimal"
 
 Each type has its own fixed scale and precision:
 
-- `Decimal128`: scale `10^16`, integer **16** digits, fractional **16** digits
-- `Decimal256`: scale `10^32`, integer **32** digits, fractional **32** digits
-- `Decimal512`: scale `10^64`, integer **64** digits, fractional **64** digits
+- `Decimal128`: scale `10^19`, integer **19** digits, fractional **19** digits
+- `Decimal256`: scale `10^38`, integer **38** digits, fractional **38** digits
+- `Decimal512`: scale `10^77`, integer **77** digits, fractional **77** digits
 
 Common properties:
 
@@ -44,9 +44,9 @@ For all constructors/parsers:
 - **Integer part**: keep only the lowest *N* digits (higher digits are dropped)
 - **Fractional part**: keep only the highest *N* digits (lower digits are dropped)
 
-Where *N* is the fractional precision for the type (16/32/64).
+Where *N* is the fractional precision for the type (19/38/77).
 
-For string/JSON parsing, **exponent shifting is applied first**, then the precision rules are applied.
+For string/JSON parsing, **exponent shifting is applied first**, then the precision rules (truncate), and finally the value is scaled to the fixed scale.
 
 ## Predefined values
 
@@ -65,7 +65,7 @@ Replace `XXX` with `128`, `256`, or `512`:
   - Precision rules apply (integer low *N*, fractional high *N*).
 - `NewXXXFromString(string) (DecimalXXX, error)`
   - Accepts leading/trailing ASCII whitespace, `_` separators, optional `.` and `e/E`.
-  - Exponent shifting is applied first, then precision rules apply.
+  - Exponent shifting is applied first, then precision rules (truncate), then scaling to fixed scale.
 - `NewXXXFromInt(int64) DecimalXXX`
   - Precision rules apply (integer low *N*).
 - `NewXXXFromFloat(float64) (DecimalXXX, error)`
@@ -76,17 +76,17 @@ Replace `XXX` with `128`, `256`, or `512`:
   - Precision rules apply after decoding.
 - `NewXXXFromJSON([]byte) (DecimalXXX, error)`
   - Accepts JSON **string** or **number**.
-  - Exponent shifting is applied first, then precision rules apply.
+  - Exponent shifting is applied first, then precision rules (truncate), then scaling to fixed scale.
 
 ## Conversions & Formatting
 
 - `Int64() (intPart, decimalPart int64)`
-  - `decimalPart` is scaled by the type scale (`10^16`, `10^32`, `10^64`).
+  - `decimalPart` is scaled by the type scale (`10^19`, `10^38`, `10^77`).
 - `Float64() float64`
 - `String() string`
   - Removes trailing zeros in the fractional part.
 - `StringFixed(n int) string`
-  - If `n > scaleDigits`, it is truncated to the type scale (16/32/64).
+  - If `n > scaleDigits`, it is truncated to the type scale (19/38/77).
   - If `n <= 0`, only the integer part is returned.
 
 ### Zero-allocation append
@@ -115,7 +115,7 @@ These append into a caller-provided buffer so allocation is fully controlled by 
 - `RoundAwayFromZero`, `RoundTowardToZero`
 - `Ceil`, `Floor`
 
-Rules for digit operations (scaleDigits = 16/32/64 by type):
+Rules for digit operations (scaleDigits = 19/38/77 by type):
 
 - If `n > scaleDigits`: **no change**
 - If `n <= -scaleDigits`: **return zero**

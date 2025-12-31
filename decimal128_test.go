@@ -22,7 +22,7 @@ func TestDecimal128Constructors(t *testing.T) {
 	}
 
 	d1b := New128(1, 1234567890123456789)
-	if got := d1b.String(); got != "1.1234567890123456" {
+	if got := d1b.String(); got != "1.1234567890123456789" {
 		t.Fatalf("New128 truncation mismatch: %s", got)
 	}
 
@@ -32,7 +32,7 @@ func TestDecimal128Constructors(t *testing.T) {
 	}
 
 	d2b := New128FromInt(10000000000000000)
-	if got := d2b.String(); got != "0" {
+	if got := d2b.String(); got != "10000000000000000" {
 		t.Fatalf("New128FromInt truncation mismatch: %s", got)
 	}
 
@@ -77,13 +77,13 @@ func TestDecimal128Constructors(t *testing.T) {
 }
 
 func TestDecimal128Conversions(t *testing.T) {
-	d := mustDecimal128(t, "123.0000000000000001")
+	d := mustDecimal128(t, "123.0000000000000000001")
 	intPart, decPart := d.Int64()
 	if intPart != 123 || decPart != 1 {
 		t.Fatalf("Int64 mismatch: %d %d", intPart, decPart)
 	}
 
-	if got := d.String(); got != "123.0000000000000001" {
+	if got := d.String(); got != "123.0000000000000000001" {
 		t.Fatalf("String mismatch: %s", got)
 	}
 
@@ -94,8 +94,8 @@ func TestDecimal128Conversions(t *testing.T) {
 	if got := d2.StringFixed(0); got != "1" {
 		t.Fatalf("StringFixed(0) mismatch: %s", got)
 	}
-	if got16, got20 := d2.StringFixed(16), d2.StringFixed(20); got16 != got20 {
-		t.Fatalf("StringFixed n>16 mismatch: %s vs %s", got16, got20)
+	if got19, got25 := d2.StringFixed(19), d2.StringFixed(25); got19 != got25 {
+		t.Fatalf("StringFixed n>19 mismatch: %s vs %s", got19, got25)
 	}
 
 	if diff := math.Abs(d2.Float64() - 1.2); diff > 1e-9 {
@@ -144,11 +144,11 @@ func TestDecimal128Modification(t *testing.T) {
 	if got := mustDecimal128(t, "123.45").Truncate(-1).String(); got != "120" {
 		t.Fatalf("Truncate negative mismatch: %s", got)
 	}
-	if got := mustDecimal128(t, "1.23").Truncate(17); !got.Equal(mustDecimal128(t, "1.23")) {
-		t.Fatalf("Truncate n>16 mismatch: %s", got.String())
+	if got := mustDecimal128(t, "1.23").Truncate(20); !got.Equal(mustDecimal128(t, "1.23")) {
+		t.Fatalf("Truncate n>19 mismatch: %s", got.String())
 	}
-	if got := mustDecimal128(t, "1.23").Truncate(-17); !got.IsZero() {
-		t.Fatalf("Truncate n<-16 mismatch: %s", got.String())
+	if got := mustDecimal128(t, "1.23").Truncate(-20); !got.IsZero() {
+		t.Fatalf("Truncate n<-19 mismatch: %s", got.String())
 	}
 
 	if got := mustDecimal128(t, "1.23").Shift(1).String(); got != "12.3" {

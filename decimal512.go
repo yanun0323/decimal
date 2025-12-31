@@ -9,14 +9,13 @@ import (
 )
 
 const (
-	scaleDigits512            = 64
-	maxDecimalDigits512       = 154 // 10^154 < 2^512 < 10^155
-	decimal512PrecisionDigits = 64
+	scaleDigits512      = 77
+	maxDecimalDigits512 = 154 // 10^154 < 2^512 < 10^155
 )
 
 // Decimal512 is a fixed-scale decimal stored as a 512-bit two's-complement integer.
 //
-// The scale is 10^64, so the numeric value is: raw / 10^64.
+// The scale is 10^77, so the numeric value is: raw / 10^77.
 // The zero value represents 0 and is ready to use.
 //
 // Memory layout is fixed and little-endian across 8 uint64 words.
@@ -30,22 +29,22 @@ type u512x [8]uint64
 type u1024 [16]uint64
 
 var (
-	scale512  = u512x{0x0, 0x6e38ed64bf6a1f01, 0xe93ff9f4daa797ed, 0x0000000000184f03, 0x0, 0x0, 0x0, 0x0} // 10^64
+	scale512  = u512x{0x0000000000000000, 0xaa987b6e6fd2a000, 0x49ef0eb713f39ebe, 0xdd15fe86affad912, 0x0, 0x0, 0x0, 0x0} // 10^77
 	pow10_512 = buildPow10_512()
-	// ln(2) scaled by 1e64.
-	constLn2_512 = Decimal512(u512x{0x0ab61e0079bfe6de, 0x15f4c45211bf4ade, 0x2aa49d4009a60be2, 0x000000000010d977, 0x0, 0x0, 0x0, 0x0})
-	// ln(10) scaled by 1e64.
-	constLn10_512 = Decimal512(u512x{0xea71dc1617d12f21, 0xdbb8f1138566b86c, 0xafb42c6b2c8625b2, 0x000000000037f905, 0x0, 0x0, 0x0, 0x0})
+	// ln(2) scaled by 1e77.
+	constLn2_512 = Decimal512(u512x{0x7d2a7732e0847de9, 0xcc384e47f50fdd42, 0x29b8f98f9ea4f2da, 0x993ebd7976ef9e36, 0x0, 0x0, 0x0, 0x0})
+	// ln(10) scaled by 1e77.
+	constLn10_512 = Decimal512(u512x{0x7ceac0a3144a5f37, 0x022005c37e9c9332, 0xeef4818b39f844a8, 0xfd11b2a56a28a031, 0x0000000000000001, 0x0, 0x0, 0x0})
 )
 
 // New512 constructs a Decimal512 from integer and fractional parts.
 //
-// intPart keeps only the lowest 64 decimal digits (higher digits are dropped).
-// decimalPart keeps only the highest 64 fractional digits (lower digits are dropped).
+// intPart keeps only the lowest 77 decimal digits (higher digits are dropped).
+// decimalPart keeps only the highest 77 fractional digits (lower digits are dropped).
 // decimalPart is interpreted as fractional digits with an implicit scale based on
 // its decimal digit length (e.g. 987654321 -> 0.987654321). It is then scaled to
-// 10^64 before combining with intPart. If decimalPart has more than 64 digits, it
-// is truncated toward zero. The result is: intPart*10^64 + scaled(decimalPart),
+// 10^77 before combining with intPart. If decimalPart has more than 77 digits, it
+// is truncated toward zero. The result is: intPart*10^77 + scaled(decimalPart),
 // with two's-complement wrap on overflow.
 func New512(intPart, decimalPart int64) Decimal512 {
 	ip := mul512(u512FromInt64(intPart), scale512)
@@ -82,9 +81,9 @@ func New512(intPart, decimalPart int64) Decimal512 {
 // New512FromString parses a decimal string with optional sign, dot, and exponent.
 //
 // It accepts leading/trailing ASCII whitespace and optional '_' separators.
-// Exponent shifting is applied first, then integer digits beyond 64 are dropped and
-// fractional digits beyond 64 are dropped. Excess fractional digits are truncated
-// (toward zero) to the fixed 64-digit scale.
+// Exponent shifting is applied first, then integer digits beyond 77 are dropped and
+// fractional digits beyond 77 are dropped. Excess fractional digits are truncated
+// (toward zero) to the fixed 77-digit scale.
 func New512FromString(s string) (Decimal512, error) {
 	u, err := parseDecimalString512(s)
 	if err != nil {
@@ -113,7 +112,7 @@ func New512FromFloat(v float64) (Decimal512, error) {
 	if neg {
 		v = -v
 	}
-	scaled := v * 1e64
+	scaled := v * 1e77
 	if math.IsInf(scaled, 0) {
 		return Decimal512{}, errInvalidFloat
 	}
@@ -128,7 +127,7 @@ func New512FromFloat(v float64) (Decimal512, error) {
 // Int64 returns the integer and fractional parts as int64 values.
 //
 // Both parts are truncated to int64 with two's-complement wrap if out of range.
-// The fractional part is returned in 10^64 base units.
+// The fractional part is returned in 10^77 base units.
 func (d Decimal512) Int64() (intPart, decimalPart int64) {
 	u := u512x(d)
 	if isZero512(u) {
@@ -162,7 +161,7 @@ func (d Decimal512) Float64() float64 {
 		u = neg512(u)
 	}
 	f := u512ToFloat(u)
-	f = f / 1e64
+	f = f / 1e77
 	if neg {
 		f = -f
 	}
@@ -197,7 +196,7 @@ func (d Decimal512) String() string {
 
 // StringFixed returns a decimal string with exactly n fractional digits.
 //
-// If n > 64 it is truncated to 64. If n <= 0, no fractional part is shown.
+// If n > 77 it is truncated to 77. If n <= 0, no fractional part is shown.
 func (d Decimal512) StringFixed(n int) string {
 	if n > scaleDigits512 {
 		n = scaleDigits512
@@ -254,7 +253,7 @@ func (d Decimal512) AppendString(dst []byte) []byte {
 
 // AppendStringFixed appends a decimal string with exactly n fractional digits to dst.
 //
-// If n > 64 it is truncated to 64. If n <= 0, no fractional part is appended.
+// If n > 77 it is truncated to 77. If n <= 0, no fractional part is appended.
 func (d Decimal512) AppendStringFixed(dst []byte, n int) []byte {
 	if n > scaleDigits512 {
 		n = scaleDigits512
@@ -281,7 +280,7 @@ func (d Decimal512) AppendStringFixed(dst []byte, n int) []byte {
 	dst = appendU512Decimal(dst, q)
 	if n > 0 {
 		dst = append(dst, '.')
-		var fracBuf [64]byte
+		var fracBuf [96]byte
 		frac := appendU512DecimalFixed(fracBuf[:0], r, scaleDigits512)
 		if n < scaleDigits512 {
 			frac = frac[:n]
@@ -355,7 +354,7 @@ func (d Decimal512) Abs() Decimal512 {
 
 // Truncate truncates to n fractional digits (banker-friendly truncation toward zero).
 //
-// If n > 64, it returns d unchanged. If n <= -64, it returns zero.
+// If n > 77, it returns d unchanged. If n <= -77, it returns zero.
 func (d Decimal512) Truncate(n int) Decimal512 {
 	return d.truncateWithMode512(n, roundModeTowardZero)
 }
@@ -363,7 +362,7 @@ func (d Decimal512) Truncate(n int) Decimal512 {
 // Shift moves the decimal point by n digits.
 //
 // Positive n shifts left (multiply by 10^n), negative n shifts right (divide by 10^-n).
-// If n > 64, it returns d unchanged. If n <= -64, it returns zero.
+// If n > 77, it returns d unchanged. If n <= -77, it returns zero.
 func (d Decimal512) Shift(n int) Decimal512 {
 	if n > scaleDigits512 {
 		return d
@@ -385,35 +384,35 @@ func (d Decimal512) Shift(n int) Decimal512 {
 
 // Round rounds to n fractional digits using banker's rounding.
 //
-// If n > 64, it returns d unchanged. If n <= -64, it returns zero.
+// If n > 77, it returns d unchanged. If n <= -77, it returns zero.
 func (d Decimal512) Round(n int) Decimal512 {
 	return d.truncateWithMode512(n, roundModeBanker)
 }
 
 // RoundAwayFromZero rounds to n fractional digits, away from zero.
 //
-// If n > 64, it returns d unchanged. If n <= -64, it returns zero.
+// If n > 77, it returns d unchanged. If n <= -77, it returns zero.
 func (d Decimal512) RoundAwayFromZero(n int) Decimal512 {
 	return d.truncateWithMode512(n, roundModeAwayFromZero)
 }
 
 // RoundTowardToZero truncates to n fractional digits toward zero.
 //
-// If n > 64, it returns d unchanged. If n <= -64, it returns zero.
+// If n > 77, it returns d unchanged. If n <= -77, it returns zero.
 func (d Decimal512) RoundTowardToZero(n int) Decimal512 {
 	return d.truncateWithMode512(n, roundModeTowardZero)
 }
 
 // Ceil rounds toward positive infinity with n fractional digits.
 //
-// If n > 64, it returns d unchanged. If n <= -64, it returns zero.
+// If n > 77, it returns d unchanged. If n <= -77, it returns zero.
 func (d Decimal512) Ceil(n int) Decimal512 {
 	return d.truncateWithMode512(n, roundModeCeil)
 }
 
 // Floor rounds toward negative infinity with n fractional digits.
 //
-// If n > 64, it returns d unchanged. If n <= -64, it returns zero.
+// If n > 77, it returns d unchanged. If n <= -77, it returns zero.
 func (d Decimal512) Floor(n int) Decimal512 {
 	return d.truncateWithMode512(n, roundModeFloor)
 }
@@ -453,7 +452,7 @@ func (d Decimal512) Sub(other Decimal512) Decimal512 {
 	return Decimal512(sub512x(u512x(d), u512x(other)))
 }
 
-// Mul returns d * other with fixed 64-digit scale.
+// Mul returns d * other with fixed 77-digit scale.
 func (d Decimal512) Mul(other Decimal512) Decimal512 {
 	u := u512x(d)
 	v := u512x(other)
@@ -475,7 +474,7 @@ func (d Decimal512) Mul(other Decimal512) Decimal512 {
 	return Decimal512(q)
 }
 
-// Div returns d / other with fixed 64-digit scale.
+// Div returns d / other with fixed 77-digit scale.
 //
 // If other is zero, it returns d unchanged.
 func (d Decimal512) Div(other Decimal512) Decimal512 {
@@ -878,16 +877,19 @@ func parseDecimalString512(s string) (u512x, error) {
 	}
 	idx := start
 	sign := 1
-	if s[idx] == '+' {
+	switch s[idx] {
+	case '+':
 		idx++
-	} else if s[idx] == '-' {
+	case '-':
 		sign = -1
 		idx++
 	}
-	var val u512x
+	digitsStart := idx
+	totalDigits := int64(0)
 	fracDigits := int64(0)
 	sawDigit := false
 	sawDot := false
+	expIndex := end
 	for idx < end {
 		c := s[idx]
 		if c == '_' {
@@ -903,6 +905,7 @@ func parseDecimalString512(s string) (u512x, error) {
 			continue
 		}
 		if c == 'e' || c == 'E' {
+			expIndex = idx
 			idx++
 			break
 		}
@@ -910,8 +913,7 @@ func parseDecimalString512(s string) (u512x, error) {
 			return u512x{}, errInvalidDecimal
 		}
 		sawDigit = true
-		val = mul512ByUint64(val, 10)
-		val = add512(val, u512x{uint64(c - '0')})
+		totalDigits++
 		if sawDot {
 			fracDigits++
 		}
@@ -921,11 +923,12 @@ func parseDecimalString512(s string) (u512x, error) {
 		return u512x{}, errInvalidDecimal
 	}
 	var exp int64
-	if idx < end {
+	if expIndex < end {
 		expSign := int64(1)
-		if s[idx] == '+' {
+		switch s[idx] {
+		case '+':
 			idx++
-		} else if s[idx] == '-' {
+		case '-':
 			expSign = -1
 			idx++
 		}
@@ -949,17 +952,97 @@ func parseDecimalString512(s string) (u512x, error) {
 		}
 		exp *= expSign
 	}
-	shift := exp - fracDigits + scaleDigits512
-	if shift >= 0 {
-		p := mul512(val, pow10Mod512(shift))
-		val = lower512(p)
-	} else {
-		factor := pow10Value512(-shift)
-		if isZero512(factor) {
-			val = u512x{}
-		} else {
-			val = divByU512Trunc(val, factor)
+	scale := int64(scaleDigits512)
+	newFracDigits := fracDigits - exp
+	var intStart, intEnd int64
+	var fracStart, fracEnd int64
+	var intZeros, fracZeros int64
+	if newFracDigits < 0 {
+		zerosRight := -newFracDigits
+		if zerosRight >= scale {
+			return u512x{}, nil
 		}
+		need := scale - zerosRight
+		if totalDigits < need {
+			need = totalDigits
+		}
+		intStart = totalDigits - need
+		intEnd = totalDigits
+		intZeros = zerosRight
+	} else if newFracDigits > totalDigits {
+		zerosLeft := newFracDigits - totalDigits
+		if zerosLeft >= scale {
+			return u512x{}, nil
+		}
+		need := scale - zerosLeft
+		if totalDigits < need {
+			need = totalDigits
+		}
+		fracStart = 0
+		fracEnd = need
+		fracZeros = zerosLeft
+	} else {
+		intLen := totalDigits - newFracDigits
+		fracLen := newFracDigits
+		if intLen > scale {
+			intStart = intLen - scale
+			intEnd = intLen
+		} else {
+			intStart = 0
+			intEnd = intLen
+		}
+		if fracLen > scale {
+			fracStart = intLen
+			fracEnd = intLen + scale
+		} else {
+			fracStart = intLen
+			fracEnd = intLen + fracLen
+		}
+	}
+	var intDigits []byte
+	var fracDigitsBuf []byte
+	digitIdx := int64(0)
+	for idx = digitsStart; idx < expIndex; idx++ {
+		c := s[idx]
+		if c == '_' || c == '.' {
+			continue
+		}
+		if c < '0' || c > '9' {
+			return u512x{}, errInvalidDecimal
+		}
+		if digitIdx >= intStart && digitIdx < intEnd {
+			intDigits = append(intDigits, c)
+		}
+		if digitIdx >= fracStart && digitIdx < fracEnd {
+			fracDigitsBuf = append(fracDigitsBuf, c)
+		}
+		digitIdx++
+	}
+	if intZeros > 0 {
+		for i := int64(0); i < intZeros; i++ {
+			intDigits = append(intDigits, '0')
+		}
+	}
+	if fracZeros > 0 {
+		zeros := make([]byte, fracZeros)
+		for i := range zeros {
+			zeros[i] = '0'
+		}
+		fracDigitsBuf = append(zeros, fracDigitsBuf...)
+	}
+	var val u512x
+	for _, c := range intDigits {
+		val = mul512ByUint64(val, 10)
+		val = add512(val, u512x{uint64(c - '0')})
+	}
+	for _, c := range fracDigitsBuf {
+		val = mul512ByUint64(val, 10)
+		val = add512(val, u512x{uint64(c - '0')})
+	}
+	shift := scale - int64(len(fracDigitsBuf))
+	if shift > 0 {
+		p := mul512(val, pow10Value512(shift))
+		val = lower512(p)
 	}
 	if sign < 0 {
 		val = neg512(val)
@@ -975,16 +1058,19 @@ func parseDecimalBytes512(b []byte) (u512x, error) {
 	}
 	idx := start
 	sign := 1
-	if b[idx] == '+' {
+	switch b[idx] {
+	case '+':
 		idx++
-	} else if b[idx] == '-' {
+	case '-':
 		sign = -1
 		idx++
 	}
-	var val u512x
+	digitsStart := idx
+	totalDigits := int64(0)
 	fracDigits := int64(0)
 	sawDigit := false
 	sawDot := false
+	expIndex := end
 	for idx < end {
 		c := b[idx]
 		if c == '_' {
@@ -1000,6 +1086,7 @@ func parseDecimalBytes512(b []byte) (u512x, error) {
 			continue
 		}
 		if c == 'e' || c == 'E' {
+			expIndex = idx
 			idx++
 			break
 		}
@@ -1007,8 +1094,7 @@ func parseDecimalBytes512(b []byte) (u512x, error) {
 			return u512x{}, errInvalidDecimal
 		}
 		sawDigit = true
-		val = mul512ByUint64(val, 10)
-		val = add512(val, u512x{uint64(c - '0')})
+		totalDigits++
 		if sawDot {
 			fracDigits++
 		}
@@ -1018,11 +1104,12 @@ func parseDecimalBytes512(b []byte) (u512x, error) {
 		return u512x{}, errInvalidDecimal
 	}
 	var exp int64
-	if idx < end {
+	if expIndex < end {
 		expSign := int64(1)
-		if b[idx] == '+' {
+		switch b[idx] {
+		case '+':
 			idx++
-		} else if b[idx] == '-' {
+		case '-':
 			expSign = -1
 			idx++
 		}
@@ -1046,17 +1133,97 @@ func parseDecimalBytes512(b []byte) (u512x, error) {
 		}
 		exp *= expSign
 	}
-	shift := exp - fracDigits + scaleDigits512
-	if shift >= 0 {
-		p := mul512(val, pow10Mod512(shift))
-		val = lower512(p)
-	} else {
-		factor := pow10Value512(-shift)
-		if isZero512(factor) {
-			val = u512x{}
-		} else {
-			val = divByU512Trunc(val, factor)
+	scale := int64(scaleDigits512)
+	newFracDigits := fracDigits - exp
+	var intStart, intEnd int64
+	var fracStart, fracEnd int64
+	var intZeros, fracZeros int64
+	if newFracDigits < 0 {
+		zerosRight := -newFracDigits
+		if zerosRight >= scale {
+			return u512x{}, nil
 		}
+		need := scale - zerosRight
+		if totalDigits < need {
+			need = totalDigits
+		}
+		intStart = totalDigits - need
+		intEnd = totalDigits
+		intZeros = zerosRight
+	} else if newFracDigits > totalDigits {
+		zerosLeft := newFracDigits - totalDigits
+		if zerosLeft >= scale {
+			return u512x{}, nil
+		}
+		need := scale - zerosLeft
+		if totalDigits < need {
+			need = totalDigits
+		}
+		fracStart = 0
+		fracEnd = need
+		fracZeros = zerosLeft
+	} else {
+		intLen := totalDigits - newFracDigits
+		fracLen := newFracDigits
+		if intLen > scale {
+			intStart = intLen - scale
+			intEnd = intLen
+		} else {
+			intStart = 0
+			intEnd = intLen
+		}
+		if fracLen > scale {
+			fracStart = intLen
+			fracEnd = intLen + scale
+		} else {
+			fracStart = intLen
+			fracEnd = intLen + fracLen
+		}
+	}
+	var intDigits []byte
+	var fracDigitsBuf []byte
+	digitIdx := int64(0)
+	for idx = digitsStart; idx < expIndex; idx++ {
+		c := b[idx]
+		if c == '_' || c == '.' {
+			continue
+		}
+		if c < '0' || c > '9' {
+			return u512x{}, errInvalidDecimal
+		}
+		if digitIdx >= intStart && digitIdx < intEnd {
+			intDigits = append(intDigits, c)
+		}
+		if digitIdx >= fracStart && digitIdx < fracEnd {
+			fracDigitsBuf = append(fracDigitsBuf, c)
+		}
+		digitIdx++
+	}
+	if intZeros > 0 {
+		for i := int64(0); i < intZeros; i++ {
+			intDigits = append(intDigits, '0')
+		}
+	}
+	if fracZeros > 0 {
+		zeros := make([]byte, fracZeros)
+		for i := range zeros {
+			zeros[i] = '0'
+		}
+		fracDigitsBuf = append(zeros, fracDigitsBuf...)
+	}
+	var val u512x
+	for _, c := range intDigits {
+		val = mul512ByUint64(val, 10)
+		val = add512(val, u512x{uint64(c - '0')})
+	}
+	for _, c := range fracDigitsBuf {
+		val = mul512ByUint64(val, 10)
+		val = add512(val, u512x{uint64(c - '0')})
+	}
+	shift := scale - int64(len(fracDigitsBuf))
+	if shift > 0 {
+		p := mul512(val, pow10Value512(shift))
+		val = lower512(p)
 	}
 	if sign < 0 {
 		val = neg512(val)
@@ -1064,8 +1231,8 @@ func parseDecimalBytes512(b []byte) (u512x, error) {
 	return applyPrecision512(val), nil
 }
 
-// applyPrecision512 drops integer digits beyond 64 and fractional digits beyond 64.
-// It assumes the input is scaled by 10^64.
+// applyPrecision512 drops integer digits beyond 77 and fractional digits beyond 77.
+// It assumes the input is scaled by 10^77.
 func applyPrecision512(u u512x) u512x {
 	if isZero512(u) {
 		return u
@@ -1077,7 +1244,7 @@ func applyPrecision512(u u512x) u512x {
 	intPart, fracPart := divMod512By512(u, scale512)
 	_, intRem := divMod512By512(intPart, pow10Value512(scaleDigits512))
 	intPart = intRem
-	// scaleDigits512 == decimal512PrecisionDigits, so fractional trimming is a no-op.
+	// scaleDigits512 == 77, so fractional trimming is a no-op.
 	raw := add512(lower512(mul512(intPart, scale512)), fracPart)
 	if neg {
 		raw = neg512(raw)
@@ -1112,8 +1279,8 @@ func u512FromFloatTrunc(v float64) u512x {
 	}
 	bits64 := math.Float64bits(v)
 	exp := int((bits64>>52)&0x7ff) - 1023
-	mant := bits64 & ((uint64(1) << 52) - 1)
-	mant |= uint64(1) << 52
+	m := bits64 & ((uint64(1) << 52) - 1)
+	m |= uint64(1) << 52
 	if exp < 0 {
 		return u512x{}
 	}
@@ -1121,7 +1288,7 @@ func u512FromFloatTrunc(v float64) u512x {
 	if shift >= 512 {
 		return u512x{}
 	}
-	u := u512x{mant}
+	u := u512x{m}
 	if shift == 0 {
 		return u
 	}
@@ -1609,10 +1776,10 @@ func u512FromInt64(v int64) u512x {
 		return u512x{uint64(v)}
 	}
 	uv := uint64(v)
-	return u512x{uv, ^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}
+	return u512x{uv, invUint64, invUint64, invUint64, invUint64, invUint64, invUint64, invUint64}
 }
 
 // scale512Squared is an internal helper.
 func scale512Squared() u512x {
-	return u512x{0x0, 0x0, 0x03df99092e953e01, 0x2374e42f0f1538fd, 0xc404dc08d3cff5ec, 0xa6337f19bccdb0da, 0x0000024ee91f2603, 0x0}
+	return u512x{0x0000000000000000, 0x0000000000000000, 0xaf99d40ae4000000, 0x4544b653355155b6, 0x27cbd2fe62145f08, 0x5ca47e4f88d45371, 0xaafb550ffacfd8fa, 0xbeeefb584aff8603}
 }

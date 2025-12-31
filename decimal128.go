@@ -9,14 +9,14 @@ import (
 )
 
 const (
-	scaleDigits128            = 16
+	scaleDigits128            = 19
 	maxDecimalDigits128       = 38 // 10^38 < 2^128 < 10^39
-	decimal128PrecisionDigits = 16
+	decimal128PrecisionDigits = 19
 )
 
 // Decimal128 is a fixed-scale decimal stored as a 128-bit two's-complement integer.
 //
-// The scale is 10^16, so the numeric value is: raw / 10^16.
+// The scale is 10^19, so the numeric value is: raw / 10^19.
 // The zero value represents 0 and is ready to use.
 //
 // Memory layout is fixed and little-endian across 2 uint64 words.
@@ -30,24 +30,24 @@ type u128 [2]uint64
 type u256_128 [4]uint64
 
 var (
-	scale128 = u128{0x002386f26fc10000, 0x0000000000000000} // 10^16
-	// 10^32, used by Inv().
-	scaleSquared128 = u256_128{0x85acef8100000000, 0x000004ee2d6d415b, 0x0, 0x0}
+	scale128 = u128{0x8ac7230489e80000, 0x0000000000000000} // 10^19
+	// 10^38, used by Inv().
+	scaleSquared128 = u256_128{0x098a224000000000, 0x4b3b4ca85a86c47a, 0x0, 0x0}
 	pow10_128       = buildPow10_128()
-	// ln(2) scaled by 1e16.
-	constLn2_128 = Decimal128(u128{0x0018a0230abe4edd, 0x0000000000000000})
-	// ln(10) scaled by 1e16.
-	constLn10_128 = Decimal128(u128{0x0051cde3b15487e8, 0x0000000000000000})
+	// ln(2) scaled by 1e19.
+	constLn2_128 = Decimal128(u128{0x603188e1f7640fa6, 0x0000000000000000})
+	// ln(10) scaled by 1e19.
+	constLn10_128 = Decimal128(u128{0x3f8c416cb232e588, 0x0000000000000001})
 )
 
 // New128 constructs a Decimal128 from integer and fractional parts.
 //
-// intPart keeps only the lowest 16 decimal digits (higher digits are dropped).
-// decimalPart keeps only the highest 16 fractional digits (lower digits are dropped).
+// intPart keeps only the lowest 19 decimal digits (higher digits are dropped).
+// decimalPart keeps only the highest 19 fractional digits (lower digits are dropped).
 // decimalPart is interpreted as fractional digits with an implicit scale based on
 // its decimal digit length (e.g. 987654321 -> 0.987654321). It is then scaled to
-// 10^16 before combining with intPart. If decimalPart has more than 16 digits, it
-// is truncated toward zero. The result is: intPart*10^16 + scaled(decimalPart),
+// 10^19 before combining with intPart. If decimalPart has more than 19 digits, it
+// is truncated toward zero. The result is: intPart*10^19 + scaled(decimalPart),
 // with two's-complement wrap on overflow.
 func New128(intPart, decimalPart int64) Decimal128 {
 	intPart = truncateIntPart128(intPart)
@@ -86,9 +86,9 @@ func New128(intPart, decimalPart int64) Decimal128 {
 // New128FromString parses a decimal string with optional sign, dot, and exponent.
 //
 // It accepts leading/trailing ASCII whitespace and optional '_' separators.
-// Exponent shifting is applied first, then integer digits beyond 16 are dropped and
-// fractional digits beyond 16 are dropped. Excess fractional digits are truncated
-// (toward zero) to the fixed 16-digit scale.
+// Exponent shifting is applied first, then integer digits beyond 19 are dropped and
+// fractional digits beyond 19 are dropped. Excess fractional digits are truncated
+// (toward zero) to the fixed 19-digit scale.
 func New128FromString(s string) (Decimal128, error) {
 	u, err := parseDecimalString128(s)
 	if err != nil {
@@ -99,7 +99,7 @@ func New128FromString(s string) (Decimal128, error) {
 
 // New128FromInt constructs a Decimal128 from an int64 integer value.
 //
-// Only the lowest 16 decimal digits are kept.
+// Only the lowest 19 decimal digits are kept.
 func New128FromInt(v int64) Decimal128 {
 	v = truncateIntPart128(v)
 	p := mul128(u128FromInt64(v), scale128)
@@ -108,8 +108,8 @@ func New128FromInt(v int64) Decimal128 {
 
 // New128FromFloat converts a float64 to Decimal128 by truncating toward zero.
 //
-// The integer part keeps only the lowest 16 decimal digits. The fractional part
-// keeps only the highest 16 digits (closest to the decimal point).
+// The integer part keeps only the lowest 19 decimal digits. The fractional part
+// keeps only the highest 19 digits (closest to the decimal point).
 // NaN or Inf returns an error. Overflow wraps according to two's-complement truncation.
 func New128FromFloat(v float64) (Decimal128, error) {
 	if math.IsNaN(v) || math.IsInf(v, 0) {
@@ -123,15 +123,15 @@ func New128FromFloat(v float64) (Decimal128, error) {
 		v = -v
 	}
 	intPart, frac := math.Modf(v)
-	if intPart >= 1e16 {
-		intPart = math.Mod(intPart, 1e16)
+	if intPart >= 1e19 {
+		intPart = math.Mod(intPart, 1e19)
 	}
-	fracPart := math.Floor(frac * 1e16)
+	fracPart := math.Floor(frac * 1e19)
 	if fracPart < 0 {
 		fracPart = 0
 	}
-	if fracPart >= 1e16 {
-		fracPart = 1e16 - 1
+	if fracPart >= 1e19 {
+		fracPart = 1e19 - 1
 	}
 	ip := mul128(u128{uint64(intPart), 0}, scale128)
 	fp := u128{uint64(fracPart), 0}
@@ -146,7 +146,7 @@ func New128FromFloat(v float64) (Decimal128, error) {
 // Int64 returns the integer and fractional parts as int64 values.
 //
 // Both parts are truncated to int64 with two's-complement wrap if out of range.
-// The fractional part is returned in 10^16 base units.
+// The fractional part is returned in 10^19 base units.
 func (d Decimal128) Int64() (intPart, decimalPart int64) {
 	u := u128(d)
 	if isZero128(u) {
@@ -180,7 +180,7 @@ func (d Decimal128) Float64() float64 {
 		u = neg128(u)
 	}
 	f := u128ToFloat(u)
-	f = f / 1e16
+	f = f / 1e19
 	if neg {
 		f = -f
 	}
@@ -215,7 +215,7 @@ func (d Decimal128) String() string {
 
 // StringFixed returns a decimal string with exactly n fractional digits.
 //
-// If n > 16 it is truncated to 16. If n <= 0, no fractional part is shown.
+// If n > 19 it is truncated to 19. If n <= 0, no fractional part is shown.
 func (d Decimal128) StringFixed(n int) string {
 	if n > scaleDigits128 {
 		n = scaleDigits128
@@ -272,7 +272,7 @@ func (d Decimal128) AppendString(dst []byte) []byte {
 
 // AppendStringFixed appends a decimal string with exactly n fractional digits to dst.
 //
-// If n > 16 it is truncated to 16. If n <= 0, no fractional part is appended.
+// If n > 19 it is truncated to 19. If n <= 0, no fractional part is appended.
 func (d Decimal128) AppendStringFixed(dst []byte, n int) []byte {
 	if n > scaleDigits128 {
 		n = scaleDigits128
@@ -373,7 +373,7 @@ func (d Decimal128) Abs() Decimal128 {
 
 // Truncate truncates to n fractional digits (banker-friendly truncation toward zero).
 //
-// If n > 16, it returns d unchanged. If n <= -16, it returns zero.
+// If n > 19, it returns d unchanged. If n <= -19, it returns zero.
 func (d Decimal128) Truncate(n int) Decimal128 {
 	return d.truncateWithMode128(n, roundModeTowardZero)
 }
@@ -381,7 +381,7 @@ func (d Decimal128) Truncate(n int) Decimal128 {
 // Shift moves the decimal point by n digits.
 //
 // Positive n shifts left (multiply by 10^n), negative n shifts right (divide by 10^-n).
-// If n > 16, it returns d unchanged. If n <= -16, it returns zero.
+// If n > 19, it returns d unchanged. If n <= -19, it returns zero.
 func (d Decimal128) Shift(n int) Decimal128 {
 	if n > scaleDigits128 {
 		return d
@@ -403,35 +403,35 @@ func (d Decimal128) Shift(n int) Decimal128 {
 
 // Round rounds to n fractional digits using banker's rounding.
 //
-// If n > 16, it returns d unchanged. If n <= -16, it returns zero.
+// If n > 19, it returns d unchanged. If n <= -19, it returns zero.
 func (d Decimal128) Round(n int) Decimal128 {
 	return d.truncateWithMode128(n, roundModeBanker)
 }
 
 // RoundAwayFromZero rounds to n fractional digits, away from zero.
 //
-// If n > 16, it returns d unchanged. If n <= -16, it returns zero.
+// If n > 19, it returns d unchanged. If n <= -19, it returns zero.
 func (d Decimal128) RoundAwayFromZero(n int) Decimal128 {
 	return d.truncateWithMode128(n, roundModeAwayFromZero)
 }
 
 // RoundTowardToZero truncates to n fractional digits toward zero.
 //
-// If n > 16, it returns d unchanged. If n <= -16, it returns zero.
+// If n > 19, it returns d unchanged. If n <= -19, it returns zero.
 func (d Decimal128) RoundTowardToZero(n int) Decimal128 {
 	return d.truncateWithMode128(n, roundModeTowardZero)
 }
 
 // Ceil rounds toward positive infinity with n fractional digits.
 //
-// If n > 16, it returns d unchanged. If n <= -16, it returns zero.
+// If n > 19, it returns d unchanged. If n <= -19, it returns zero.
 func (d Decimal128) Ceil(n int) Decimal128 {
 	return d.truncateWithMode128(n, roundModeCeil)
 }
 
 // Floor rounds toward negative infinity with n fractional digits.
 //
-// If n > 16, it returns d unchanged. If n <= -16, it returns zero.
+// If n > 19, it returns d unchanged. If n <= -19, it returns zero.
 func (d Decimal128) Floor(n int) Decimal128 {
 	return d.truncateWithMode128(n, roundModeFloor)
 }
@@ -471,7 +471,7 @@ func (d Decimal128) Sub(other Decimal128) Decimal128 {
 	return Decimal128(sub128(u128(d), u128(other)))
 }
 
-// Mul returns d * other with fixed 16-digit scale.
+// Mul returns d * other with fixed 19-digit scale.
 func (d Decimal128) Mul(other Decimal128) Decimal128 {
 	u := u128(d)
 	v := u128(other)
@@ -493,7 +493,7 @@ func (d Decimal128) Mul(other Decimal128) Decimal128 {
 	return Decimal128(q)
 }
 
-// Div returns d / other with fixed 16-digit scale.
+// Div returns d / other with fixed 19-digit scale.
 //
 // If other is zero, it returns d unchanged.
 func (d Decimal128) Div(other Decimal128) Decimal128 {
@@ -894,16 +894,19 @@ func parseDecimalString128(s string) (u128, error) {
 	}
 	idx := start
 	sign := 1
-	if s[idx] == '+' {
+	switch s[idx] {
+	case '+':
 		idx++
-	} else if s[idx] == '-' {
+	case '-':
 		sign = -1
 		idx++
 	}
-	var val u128
+	digitsStart := idx
+	totalDigits := int64(0)
 	fracDigits := int64(0)
 	sawDigit := false
 	sawDot := false
+	expIndex := end
 	for idx < end {
 		c := s[idx]
 		if c == '_' {
@@ -919,6 +922,7 @@ func parseDecimalString128(s string) (u128, error) {
 			continue
 		}
 		if c == 'e' || c == 'E' {
+			expIndex = idx
 			idx++
 			break
 		}
@@ -926,8 +930,7 @@ func parseDecimalString128(s string) (u128, error) {
 			return u128{}, errInvalidDecimal
 		}
 		sawDigit = true
-		val = mul128ByUint64(val, 10)
-		val = add128(val, u128{uint64(c - '0'), 0})
+		totalDigits++
 		if sawDot {
 			fracDigits++
 		}
@@ -937,11 +940,12 @@ func parseDecimalString128(s string) (u128, error) {
 		return u128{}, errInvalidDecimal
 	}
 	var exp int64
-	if idx < end {
+	if expIndex < end {
 		expSign := int64(1)
-		if s[idx] == '+' {
+		switch s[idx] {
+		case '+':
 			idx++
-		} else if s[idx] == '-' {
+		case '-':
 			expSign = -1
 			idx++
 		}
@@ -965,17 +969,97 @@ func parseDecimalString128(s string) (u128, error) {
 		}
 		exp *= expSign
 	}
-	shift := exp - fracDigits + scaleDigits128
-	if shift >= 0 {
-		p := mul128(val, pow10Mod128(shift))
-		val = lower128(p)
-	} else {
-		factor := pow10Value128(-shift)
-		if isZero128(factor) {
-			val = u128{}
-		} else {
-			val = divByU128Trunc(val, factor)
+	scale := int64(scaleDigits128)
+	newFracDigits := fracDigits - exp
+	var intStart, intEnd int64
+	var fracStart, fracEnd int64
+	var intZeros, fracZeros int64
+	if newFracDigits < 0 {
+		zerosRight := -newFracDigits
+		if zerosRight >= scale {
+			return u128{}, nil
 		}
+		need := scale - zerosRight
+		if totalDigits < need {
+			need = totalDigits
+		}
+		intStart = totalDigits - need
+		intEnd = totalDigits
+		intZeros = zerosRight
+	} else if newFracDigits > totalDigits {
+		zerosLeft := newFracDigits - totalDigits
+		if zerosLeft >= scale {
+			return u128{}, nil
+		}
+		need := scale - zerosLeft
+		if totalDigits < need {
+			need = totalDigits
+		}
+		fracStart = 0
+		fracEnd = need
+		fracZeros = zerosLeft
+	} else {
+		intLen := totalDigits - newFracDigits
+		fracLen := newFracDigits
+		if intLen > scale {
+			intStart = intLen - scale
+			intEnd = intLen
+		} else {
+			intStart = 0
+			intEnd = intLen
+		}
+		if fracLen > scale {
+			fracStart = intLen
+			fracEnd = intLen + scale
+		} else {
+			fracStart = intLen
+			fracEnd = intLen + fracLen
+		}
+	}
+	var intDigits []byte
+	var fracDigitsBuf []byte
+	digitIdx := int64(0)
+	for idx = digitsStart; idx < expIndex; idx++ {
+		c := s[idx]
+		if c == '_' || c == '.' {
+			continue
+		}
+		if c < '0' || c > '9' {
+			return u128{}, errInvalidDecimal
+		}
+		if digitIdx >= intStart && digitIdx < intEnd {
+			intDigits = append(intDigits, c)
+		}
+		if digitIdx >= fracStart && digitIdx < fracEnd {
+			fracDigitsBuf = append(fracDigitsBuf, c)
+		}
+		digitIdx++
+	}
+	if intZeros > 0 {
+		for i := int64(0); i < intZeros; i++ {
+			intDigits = append(intDigits, '0')
+		}
+	}
+	if fracZeros > 0 {
+		zeros := make([]byte, fracZeros)
+		for i := range zeros {
+			zeros[i] = '0'
+		}
+		fracDigitsBuf = append(zeros, fracDigitsBuf...)
+	}
+	var val u128
+	for _, c := range intDigits {
+		val = mul128ByUint64(val, 10)
+		val = add128(val, u128{uint64(c - '0'), 0})
+	}
+	for _, c := range fracDigitsBuf {
+		val = mul128ByUint64(val, 10)
+		val = add128(val, u128{uint64(c - '0'), 0})
+	}
+	shift := scale - int64(len(fracDigitsBuf))
+	if shift > 0 {
+		p := mul128(val, pow10Value128(shift))
+		val = lower128(p)
 	}
 	if sign < 0 {
 		val = neg128(val)
@@ -991,16 +1075,19 @@ func parseDecimalBytes128(b []byte) (u128, error) {
 	}
 	idx := start
 	sign := 1
-	if b[idx] == '+' {
+	switch b[idx] {
+	case '+':
 		idx++
-	} else if b[idx] == '-' {
+	case '-':
 		sign = -1
 		idx++
 	}
-	var val u128
+	digitsStart := idx
+	totalDigits := int64(0)
 	fracDigits := int64(0)
 	sawDigit := false
 	sawDot := false
+	expIndex := end
 	for idx < end {
 		c := b[idx]
 		if c == '_' {
@@ -1016,6 +1103,7 @@ func parseDecimalBytes128(b []byte) (u128, error) {
 			continue
 		}
 		if c == 'e' || c == 'E' {
+			expIndex = idx
 			idx++
 			break
 		}
@@ -1023,8 +1111,7 @@ func parseDecimalBytes128(b []byte) (u128, error) {
 			return u128{}, errInvalidDecimal
 		}
 		sawDigit = true
-		val = mul128ByUint64(val, 10)
-		val = add128(val, u128{uint64(c - '0'), 0})
+		totalDigits++
 		if sawDot {
 			fracDigits++
 		}
@@ -1034,11 +1121,12 @@ func parseDecimalBytes128(b []byte) (u128, error) {
 		return u128{}, errInvalidDecimal
 	}
 	var exp int64
-	if idx < end {
+	if expIndex < end {
 		expSign := int64(1)
-		if b[idx] == '+' {
+		switch b[idx] {
+		case '+':
 			idx++
-		} else if b[idx] == '-' {
+		case '-':
 			expSign = -1
 			idx++
 		}
@@ -1062,17 +1150,97 @@ func parseDecimalBytes128(b []byte) (u128, error) {
 		}
 		exp *= expSign
 	}
-	shift := exp - fracDigits + scaleDigits128
-	if shift >= 0 {
-		p := mul128(val, pow10Mod128(shift))
-		val = lower128(p)
-	} else {
-		factor := pow10Value128(-shift)
-		if isZero128(factor) {
-			val = u128{}
-		} else {
-			val = divByU128Trunc(val, factor)
+	scale := int64(scaleDigits128)
+	newFracDigits := fracDigits - exp
+	var intStart, intEnd int64
+	var fracStart, fracEnd int64
+	var intZeros, fracZeros int64
+	if newFracDigits < 0 {
+		zerosRight := -newFracDigits
+		if zerosRight >= scale {
+			return u128{}, nil
 		}
+		need := scale - zerosRight
+		if totalDigits < need {
+			need = totalDigits
+		}
+		intStart = totalDigits - need
+		intEnd = totalDigits
+		intZeros = zerosRight
+	} else if newFracDigits > totalDigits {
+		zerosLeft := newFracDigits - totalDigits
+		if zerosLeft >= scale {
+			return u128{}, nil
+		}
+		need := scale - zerosLeft
+		if totalDigits < need {
+			need = totalDigits
+		}
+		fracStart = 0
+		fracEnd = need
+		fracZeros = zerosLeft
+	} else {
+		intLen := totalDigits - newFracDigits
+		fracLen := newFracDigits
+		if intLen > scale {
+			intStart = intLen - scale
+			intEnd = intLen
+		} else {
+			intStart = 0
+			intEnd = intLen
+		}
+		if fracLen > scale {
+			fracStart = intLen
+			fracEnd = intLen + scale
+		} else {
+			fracStart = intLen
+			fracEnd = intLen + fracLen
+		}
+	}
+	var intDigits []byte
+	var fracDigitsBuf []byte
+	digitIdx := int64(0)
+	for idx = digitsStart; idx < expIndex; idx++ {
+		c := b[idx]
+		if c == '_' || c == '.' {
+			continue
+		}
+		if c < '0' || c > '9' {
+			return u128{}, errInvalidDecimal
+		}
+		if digitIdx >= intStart && digitIdx < intEnd {
+			intDigits = append(intDigits, c)
+		}
+		if digitIdx >= fracStart && digitIdx < fracEnd {
+			fracDigitsBuf = append(fracDigitsBuf, c)
+		}
+		digitIdx++
+	}
+	if intZeros > 0 {
+		for i := int64(0); i < intZeros; i++ {
+			intDigits = append(intDigits, '0')
+		}
+	}
+	if fracZeros > 0 {
+		zeros := make([]byte, fracZeros)
+		for i := range zeros {
+			zeros[i] = '0'
+		}
+		fracDigitsBuf = append(zeros, fracDigitsBuf...)
+	}
+	var val u128
+	for _, c := range intDigits {
+		val = mul128ByUint64(val, 10)
+		val = add128(val, u128{uint64(c - '0'), 0})
+	}
+	for _, c := range fracDigitsBuf {
+		val = mul128ByUint64(val, 10)
+		val = add128(val, u128{uint64(c - '0'), 0})
+	}
+	shift := scale - int64(len(fracDigitsBuf))
+	if shift > 0 {
+		p := mul128(val, pow10Value128(shift))
+		val = lower128(p)
 	}
 	if sign < 0 {
 		val = neg128(val)
@@ -1080,7 +1248,7 @@ func parseDecimalBytes128(b []byte) (u128, error) {
 	return applyPrecision128(val), nil
 }
 
-// truncateIntPart128 keeps only the lowest 16 decimal digits.
+// truncateIntPart128 keeps only the lowest 19 decimal digits.
 func truncateIntPart128(v int64) int64 {
 	if v == 0 {
 		return 0
@@ -1095,7 +1263,7 @@ func truncateIntPart128(v int64) int64 {
 	return int64(abs)
 }
 
-// truncateDecimalPart128 keeps only the highest 16 fractional digits.
+// truncateDecimalPart128 keeps only the highest 19 fractional digits.
 func truncateDecimalPart128(v int64) int64 {
 	if v == 0 {
 		return 0
@@ -1111,8 +1279,8 @@ func truncateDecimalPart128(v int64) int64 {
 	return int64(abs)
 }
 
-// applyPrecision128 drops integer digits beyond 16 and fractional digits beyond 16.
-// It assumes the input is scaled by 10^16.
+// applyPrecision128 drops integer digits beyond 19 and fractional digits beyond 19.
+// It assumes the input is scaled by 10^19.
 func applyPrecision128(u u128) u128 {
 	if isZero128(u) {
 		return u
@@ -1150,32 +1318,6 @@ func divDecimal128ByUint64(d Decimal128, n uint64) Decimal128 {
 		q = neg128(q)
 	}
 	return Decimal128(q)
-}
-
-// u128FromFloatTrunc is an internal helper.
-func u128FromFloatTrunc(v float64) u128 {
-	if v <= 0 {
-		return u128{}
-	}
-	bits64 := math.Float64bits(v)
-	exp := int((bits64>>52)&0x7ff) - 1023
-	mant := bits64 & ((uint64(1) << 52) - 1)
-	mant |= uint64(1) << 52
-	if exp < 0 {
-		return u128{}
-	}
-	shift := exp - 52
-	if shift >= 128 {
-		return u128{}
-	}
-	u := u128{mant, 0}
-	if shift == 0 {
-		return u
-	}
-	if shift > 0 {
-		return shl128(u, uint(shift))
-	}
-	return shr128(u, uint(-shift))
 }
 
 // u128ToFloat is an internal helper.
@@ -1623,5 +1765,5 @@ func u128FromInt64(v int64) u128 {
 		return u128{uint64(v), 0}
 	}
 	uv := uint64(v)
-	return u128{uv, ^uint64(0)}
+	return u128{uv, invUint64}
 }

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	scaleDigits      = 32
+	scaleDigits      = 38
 	maxDecimalDigits = 77 // 10^77 < 2^256 < 10^78
 )
 
@@ -45,7 +45,7 @@ var (
 
 // Decimal256 is a fixed-scale decimal stored as a 256-bit two's-complement integer.
 //
-// The scale is 10^32, so the numeric value is: raw / 10^32.
+// The scale is 10^38, so the numeric value is: raw / 10^38.
 // The zero value represents 0 and is ready to use.
 //
 // Memory layout is fixed and little-endian across 4 uint64 words.
@@ -59,24 +59,25 @@ type u256 [4]uint64
 type u512 [8]uint64
 
 var (
-	scale = u256{0x85acef8100000000, 0x000004ee2d6d415b, 0x0, 0x0} // 10^32
-	// 10^64, used by Inv().
-	scaleSquared = u256{0x0, 0x6e38ed64bf6a1f01, 0xe93ff9f4daa797ed, 0x0000000000184f03}
+	scale = u256{0x098a224000000000, 0x4b3b4ca85a86c47a, 0x0, 0x0} // 10^38
+	// 10^76, used by Inv().
+	scaleSquared = u256{0x0000000000000000, 0x7775a5f171951000, 0x0764b4abe8652979, 0x161bcca7119915b5}
 	pow10        = buildPow10()
-	// ln(2) scaled by 1e32.
-	constLn2 = Decimal256(u256{0x797c31134d266499, 0x36adfeef0c4, 0x0, 0x0})
-	// ln(10) scaled by 1e32.
-	constLn10 = Decimal256(u256{0x686e1a5c5b723214, 0xb5a455ec490, 0x0, 0x0})
+	// ln(2) scaled by 1e38.
+	constLn2 = Decimal256(u256{0x43d4c3f714899de7, 0x34258773b151f6b7, 0x0, 0x0})
+	// ln(10) scaled by 1e38.
+	constLn10 = Decimal256(u256{0x09bbc25b3ca81898, 0xad3a2d014ad47d7a, 0x0, 0x0})
+	invUint64 = ^uint64(0)
 )
 
 // New256 constructs a Decimal256 from integer and fractional parts.
 //
-// intPart keeps only the lowest 32 decimal digits (higher digits are dropped).
-// decimalPart keeps only the highest 32 fractional digits (lower digits are dropped).
+// intPart keeps only the lowest 38 decimal digits (higher digits are dropped).
+// decimalPart keeps only the highest 38 fractional digits (lower digits are dropped).
 // decimalPart is interpreted as fractional digits with an implicit scale based on
 // its decimal digit length (e.g. 987654321 -> 0.987654321). It is then scaled to
-// 10^32 before combining with intPart. If decimalPart has more than 32 digits, it
-// is truncated toward zero. The result is: intPart*10^32 + scaled(decimalPart),
+// 10^38 before combining with intPart. If decimalPart has more than 38 digits, it
+// is truncated toward zero. The result is: intPart*10^38 + scaled(decimalPart),
 // with two's-complement wrap on overflow.
 func New256(intPart, decimalPart int64) Decimal256 {
 	ip := mul256(u256FromInt64(intPart), scale)
@@ -113,9 +114,9 @@ func New256(intPart, decimalPart int64) Decimal256 {
 // New256FromString parses a decimal string with optional sign, dot, and exponent.
 //
 // It accepts leading/trailing ASCII whitespace and optional '_' separators.
-// Exponent shifting is applied first, then integer digits beyond 32 are dropped and
-// fractional digits beyond 32 are dropped. Excess fractional digits are truncated
-// (toward zero) to the fixed 32-digit scale.
+// Exponent shifting is applied first, then integer digits beyond 38 are dropped and
+// fractional digits beyond 38 are dropped. Excess fractional digits are truncated
+// (toward zero) to the fixed 38-digit scale.
 func New256FromString(s string) (Decimal256, error) {
 	u, err := parseDecimalString(s)
 	if err != nil {
@@ -144,7 +145,7 @@ func New256FromFloat(v float64) (Decimal256, error) {
 	if neg {
 		v = -v
 	}
-	scaled := v * 1e32
+	scaled := v * 1e38
 	if math.IsInf(scaled, 0) {
 		return Decimal256{}, errInvalidFloat
 	}
@@ -203,7 +204,7 @@ func New256FromJSON(b []byte) (Decimal256, error) {
 // Int64 returns the integer and fractional parts as int64 values.
 //
 // Both parts are truncated to int64 with two's-complement wrap if out of range.
-// The fractional part is returned in 10^32 base units.
+// The fractional part is returned in 10^38 base units.
 func (d Decimal256) Int64() (intPart, decimalPart int64) {
 	u := u256(d)
 	if isZero(u) {
@@ -237,7 +238,7 @@ func (d Decimal256) Float64() float64 {
 		u = neg256(u)
 	}
 	f := u256ToFloat(u)
-	f = f / 1e32
+	f = f / 1e38
 	if neg {
 		f = -f
 	}
@@ -272,7 +273,7 @@ func (d Decimal256) String() string {
 
 // StringFixed returns a decimal string with exactly n fractional digits.
 //
-// If n > 32 it is truncated to 32. If n <= 0, no fractional part is shown.
+// If n > 38 it is truncated to 38. If n <= 0, no fractional part is shown.
 func (d Decimal256) StringFixed(n int) string {
 	if n > scaleDigits {
 		n = scaleDigits
@@ -329,7 +330,7 @@ func (d Decimal256) AppendString(dst []byte) []byte {
 
 // AppendStringFixed appends a decimal string with exactly n fractional digits to dst.
 //
-// If n > 32 it is truncated to 32. If n <= 0, no fractional part is appended.
+// If n > 38 it is truncated to 38. If n <= 0, no fractional part is appended.
 func (d Decimal256) AppendStringFixed(dst []byte, n int) []byte {
 	if n > scaleDigits {
 		n = scaleDigits
@@ -430,7 +431,7 @@ func (d Decimal256) Abs() Decimal256 {
 
 // Truncate truncates to n fractional digits (banker-friendly truncation toward zero).
 //
-// If n > 32, it returns d unchanged. If n <= -32, it returns zero.
+// If n > 38, it returns d unchanged. If n <= -38, it returns zero.
 func (d Decimal256) Truncate(n int) Decimal256 {
 	return d.truncateWithMode(n, roundModeTowardZero)
 }
@@ -438,7 +439,7 @@ func (d Decimal256) Truncate(n int) Decimal256 {
 // Shift moves the decimal point by n digits.
 //
 // Positive n shifts left (multiply by 10^n), negative n shifts right (divide by 10^-n).
-// If n > 32, it returns d unchanged. If n <= -32, it returns zero.
+// If n > 38, it returns d unchanged. If n <= -38, it returns zero.
 func (d Decimal256) Shift(n int) Decimal256 {
 	if n > scaleDigits {
 		return d
@@ -460,35 +461,35 @@ func (d Decimal256) Shift(n int) Decimal256 {
 
 // Round rounds to n fractional digits using banker's rounding.
 //
-// If n > 32, it returns d unchanged. If n <= -32, it returns zero.
+// If n > 38, it returns d unchanged. If n <= -38, it returns zero.
 func (d Decimal256) Round(n int) Decimal256 {
 	return d.truncateWithMode(n, roundModeBanker)
 }
 
 // RoundAwayFromZero rounds to n fractional digits, away from zero.
 //
-// If n > 32, it returns d unchanged. If n <= -32, it returns zero.
+// If n > 38, it returns d unchanged. If n <= -38, it returns zero.
 func (d Decimal256) RoundAwayFromZero(n int) Decimal256 {
 	return d.truncateWithMode(n, roundModeAwayFromZero)
 }
 
 // RoundTowardToZero truncates to n fractional digits toward zero.
 //
-// If n > 32, it returns d unchanged. If n <= -32, it returns zero.
+// If n > 38, it returns d unchanged. If n <= -38, it returns zero.
 func (d Decimal256) RoundTowardToZero(n int) Decimal256 {
 	return d.truncateWithMode(n, roundModeTowardZero)
 }
 
 // Ceil rounds toward positive infinity with n fractional digits.
 //
-// If n > 32, it returns d unchanged. If n <= -32, it returns zero.
+// If n > 38, it returns d unchanged. If n <= -38, it returns zero.
 func (d Decimal256) Ceil(n int) Decimal256 {
 	return d.truncateWithMode(n, roundModeCeil)
 }
 
 // Floor rounds toward negative infinity with n fractional digits.
 //
-// If n > 32, it returns d unchanged. If n <= -32, it returns zero.
+// If n > 38, it returns d unchanged. If n <= -38, it returns zero.
 func (d Decimal256) Floor(n int) Decimal256 {
 	return d.truncateWithMode(n, roundModeFloor)
 }
@@ -528,7 +529,7 @@ func (d Decimal256) Sub(other Decimal256) Decimal256 {
 	return Decimal256(sub256(u256(d), u256(other)))
 }
 
-// Mul returns d * other with fixed 32-digit scale.
+// Mul returns d * other with fixed 38-digit scale.
 func (d Decimal256) Mul(other Decimal256) Decimal256 {
 	u := u256(d)
 	v := u256(other)
@@ -550,7 +551,7 @@ func (d Decimal256) Mul(other Decimal256) Decimal256 {
 	return Decimal256(q)
 }
 
-// Div returns d / other with fixed 32-digit scale.
+// Div returns d / other with fixed 38-digit scale.
 //
 // If other is zero, it returns d unchanged.
 func (d Decimal256) Div(other Decimal256) Decimal256 {
@@ -923,16 +924,19 @@ func parseDecimalString(s string) (u256, error) {
 	}
 	idx := start
 	sign := 1
-	if s[idx] == '+' {
+	switch s[idx] {
+	case '+':
 		idx++
-	} else if s[idx] == '-' {
+	case '-':
 		sign = -1
 		idx++
 	}
-	var val u256
+	digitsStart := idx
+	totalDigits := int64(0)
 	fracDigits := int64(0)
 	sawDigit := false
 	sawDot := false
+	expIndex := end
 	for idx < end {
 		c := s[idx]
 		if c == '_' {
@@ -948,6 +952,7 @@ func parseDecimalString(s string) (u256, error) {
 			continue
 		}
 		if c == 'e' || c == 'E' {
+			expIndex = idx
 			idx++
 			break
 		}
@@ -955,8 +960,7 @@ func parseDecimalString(s string) (u256, error) {
 			return u256{}, errInvalidDecimal
 		}
 		sawDigit = true
-		val = mul256ByUint64(val, 10)
-		val = add256(val, u256{uint64(c - '0'), 0, 0, 0})
+		totalDigits++
 		if sawDot {
 			fracDigits++
 		}
@@ -966,11 +970,12 @@ func parseDecimalString(s string) (u256, error) {
 		return u256{}, errInvalidDecimal
 	}
 	var exp int64
-	if idx < end {
+	if expIndex < end {
 		expSign := int64(1)
-		if s[idx] == '+' {
+		switch s[idx] {
+		case '+':
 			idx++
-		} else if s[idx] == '-' {
+		case '-':
 			expSign = -1
 			idx++
 		}
@@ -994,17 +999,94 @@ func parseDecimalString(s string) (u256, error) {
 		}
 		exp *= expSign
 	}
-	shift := exp - fracDigits + scaleDigits
-	if shift >= 0 {
-		p := mul256(val, pow10Mod(shift))
-		val = lower256(p)
-	} else {
-		factor := pow10Value(-shift)
-		if isZero(factor) {
-			val = u256{}
-		} else {
-			val = divByU256Trunc(val, factor)
+	scale := int64(scaleDigits)
+	newFracDigits := fracDigits - exp
+	var intStart, intEnd int64
+	var fracStart, fracEnd int64
+	var intZeros, fracZeros int64
+	if newFracDigits < 0 {
+		zerosRight := -newFracDigits
+		if zerosRight >= scale {
+			return u256{}, nil
 		}
+		need := min(totalDigits, scale-zerosRight)
+		intStart = totalDigits - need
+		intEnd = totalDigits
+		intZeros = zerosRight
+	} else if newFracDigits > totalDigits {
+		zerosLeft := newFracDigits - totalDigits
+		if zerosLeft >= scale {
+			return u256{}, nil
+		}
+		need := scale - zerosLeft
+		if totalDigits < need {
+			need = totalDigits
+		}
+		fracStart = 0
+		fracEnd = need
+		fracZeros = zerosLeft
+	} else {
+		intLen := totalDigits - newFracDigits
+		fracLen := newFracDigits
+		if intLen > scale {
+			intStart = intLen - scale
+			intEnd = intLen
+		} else {
+			intStart = 0
+			intEnd = intLen
+		}
+		if fracLen > scale {
+			fracStart = intLen
+			fracEnd = intLen + scale
+		} else {
+			fracStart = intLen
+			fracEnd = intLen + fracLen
+		}
+	}
+	var intDigits []byte
+	var fracDigitsBuf []byte
+	digitIdx := int64(0)
+	for idx = digitsStart; idx < expIndex; idx++ {
+		c := s[idx]
+		if c == '_' || c == '.' {
+			continue
+		}
+		if c < '0' || c > '9' {
+			return u256{}, errInvalidDecimal
+		}
+		if digitIdx >= intStart && digitIdx < intEnd {
+			intDigits = append(intDigits, c)
+		}
+		if digitIdx >= fracStart && digitIdx < fracEnd {
+			fracDigitsBuf = append(fracDigitsBuf, c)
+		}
+		digitIdx++
+	}
+	if intZeros > 0 {
+		for i := int64(0); i < intZeros; i++ {
+			intDigits = append(intDigits, '0')
+		}
+	}
+	if fracZeros > 0 {
+		zeros := make([]byte, fracZeros)
+		for i := range zeros {
+			zeros[i] = '0'
+		}
+		fracDigitsBuf = append(zeros, fracDigitsBuf...)
+	}
+	var val u256
+	for _, c := range intDigits {
+		val = mul256ByUint64(val, 10)
+		val = add256(val, u256{uint64(c - '0'), 0, 0, 0})
+	}
+	for _, c := range fracDigitsBuf {
+		val = mul256ByUint64(val, 10)
+		val = add256(val, u256{uint64(c - '0'), 0, 0, 0})
+	}
+	shift := scale - int64(len(fracDigitsBuf))
+	if shift > 0 {
+		p := mul256(val, pow10Value(shift))
+		val = lower256(p)
 	}
 	if sign < 0 {
 		val = neg256(val)
@@ -1020,16 +1102,19 @@ func parseDecimalBytes(b []byte) (u256, error) {
 	}
 	idx := start
 	sign := 1
-	if b[idx] == '+' {
+	switch b[idx] {
+	case '+':
 		idx++
-	} else if b[idx] == '-' {
+	case '-':
 		sign = -1
 		idx++
 	}
-	var val u256
+	digitsStart := idx
+	totalDigits := int64(0)
 	fracDigits := int64(0)
 	sawDigit := false
 	sawDot := false
+	expIndex := end
 	for idx < end {
 		c := b[idx]
 		if c == '_' {
@@ -1045,6 +1130,7 @@ func parseDecimalBytes(b []byte) (u256, error) {
 			continue
 		}
 		if c == 'e' || c == 'E' {
+			expIndex = idx
 			idx++
 			break
 		}
@@ -1052,8 +1138,7 @@ func parseDecimalBytes(b []byte) (u256, error) {
 			return u256{}, errInvalidDecimal
 		}
 		sawDigit = true
-		val = mul256ByUint64(val, 10)
-		val = add256(val, u256{uint64(c - '0'), 0, 0, 0})
+		totalDigits++
 		if sawDot {
 			fracDigits++
 		}
@@ -1063,11 +1148,12 @@ func parseDecimalBytes(b []byte) (u256, error) {
 		return u256{}, errInvalidDecimal
 	}
 	var exp int64
-	if idx < end {
+	if expIndex < end {
 		expSign := int64(1)
-		if b[idx] == '+' {
+		switch b[idx] {
+		case '+':
 			idx++
-		} else if b[idx] == '-' {
+		case '-':
 			expSign = -1
 			idx++
 		}
@@ -1091,17 +1177,97 @@ func parseDecimalBytes(b []byte) (u256, error) {
 		}
 		exp *= expSign
 	}
-	shift := exp - fracDigits + scaleDigits
-	if shift >= 0 {
-		p := mul256(val, pow10Mod(shift))
-		val = lower256(p)
-	} else {
-		factor := pow10Value(-shift)
-		if isZero(factor) {
-			val = u256{}
-		} else {
-			val = divByU256Trunc(val, factor)
+	scale := int64(scaleDigits)
+	newFracDigits := fracDigits - exp
+	var intStart, intEnd int64
+	var fracStart, fracEnd int64
+	var intZeros, fracZeros int64
+	if newFracDigits < 0 {
+		zerosRight := -newFracDigits
+		if zerosRight >= scale {
+			return u256{}, nil
 		}
+		need := scale - zerosRight
+		if totalDigits < need {
+			need = totalDigits
+		}
+		intStart = totalDigits - need
+		intEnd = totalDigits
+		intZeros = zerosRight
+	} else if newFracDigits > totalDigits {
+		zerosLeft := newFracDigits - totalDigits
+		if zerosLeft >= scale {
+			return u256{}, nil
+		}
+		need := scale - zerosLeft
+		if totalDigits < need {
+			need = totalDigits
+		}
+		fracStart = 0
+		fracEnd = need
+		fracZeros = zerosLeft
+	} else {
+		intLen := totalDigits - newFracDigits
+		fracLen := newFracDigits
+		if intLen > scale {
+			intStart = intLen - scale
+			intEnd = intLen
+		} else {
+			intStart = 0
+			intEnd = intLen
+		}
+		if fracLen > scale {
+			fracStart = intLen
+			fracEnd = intLen + scale
+		} else {
+			fracStart = intLen
+			fracEnd = intLen + fracLen
+		}
+	}
+	var intDigits []byte
+	var fracDigitsBuf []byte
+	digitIdx := int64(0)
+	for idx = digitsStart; idx < expIndex; idx++ {
+		c := b[idx]
+		if c == '_' || c == '.' {
+			continue
+		}
+		if c < '0' || c > '9' {
+			return u256{}, errInvalidDecimal
+		}
+		if digitIdx >= intStart && digitIdx < intEnd {
+			intDigits = append(intDigits, c)
+		}
+		if digitIdx >= fracStart && digitIdx < fracEnd {
+			fracDigitsBuf = append(fracDigitsBuf, c)
+		}
+		digitIdx++
+	}
+	if intZeros > 0 {
+		for i := int64(0); i < intZeros; i++ {
+			intDigits = append(intDigits, '0')
+		}
+	}
+	if fracZeros > 0 {
+		zeros := make([]byte, fracZeros)
+		for i := range zeros {
+			zeros[i] = '0'
+		}
+		fracDigitsBuf = append(zeros, fracDigitsBuf...)
+	}
+	var val u256
+	for _, c := range intDigits {
+		val = mul256ByUint64(val, 10)
+		val = add256(val, u256{uint64(c - '0'), 0, 0, 0})
+	}
+	for _, c := range fracDigitsBuf {
+		val = mul256ByUint64(val, 10)
+		val = add256(val, u256{uint64(c - '0'), 0, 0, 0})
+	}
+	shift := scale - int64(len(fracDigitsBuf))
+	if shift > 0 {
+		p := mul256(val, pow10Value(shift))
+		val = lower256(p)
 	}
 	if sign < 0 {
 		val = neg256(val)
@@ -1109,8 +1275,8 @@ func parseDecimalBytes(b []byte) (u256, error) {
 	return applyPrecision256(val), nil
 }
 
-// applyPrecision256 drops integer digits beyond 32 and fractional digits beyond 32.
-// It assumes the input is scaled by 10^32.
+// applyPrecision256 drops integer digits beyond 38 and fractional digits beyond 38.
+// It assumes the input is scaled by 10^38.
 func applyPrecision256(u u256) u256 {
 	if isZero(u) {
 		return u
@@ -1122,7 +1288,7 @@ func applyPrecision256(u u256) u256 {
 	intPart, fracPart := divMod256By256(u, scale)
 	_, intRem := divMod256By256(intPart, scale)
 	intPart = intRem
-	// scaleDigits == 32, so fractional trimming is a no-op.
+	// scaleDigits == 38, so fractional trimming is a no-op.
 	raw := add256(lower256(mul256(intPart, scale)), fracPart)
 	if neg {
 		raw = neg256(raw)
@@ -1228,8 +1394,8 @@ func u256FromFloatTrunc(v float64) u256 {
 	}
 	bits64 := math.Float64bits(v)
 	exp := int((bits64>>52)&0x7ff) - 1023
-	mant := bits64 & ((uint64(1) << 52) - 1)
-	mant |= uint64(1) << 52
+	m := bits64 & ((uint64(1) << 52) - 1)
+	m |= uint64(1) << 52
 	if exp < 0 {
 		return u256{}
 	}
@@ -1237,7 +1403,7 @@ func u256FromFloatTrunc(v float64) u256 {
 	if shift >= 256 {
 		return u256{}
 	}
-	u := u256{mant, 0, 0, 0}
+	u := u256{m, 0, 0, 0}
 	if shift == 0 {
 		return u
 	}
@@ -1707,5 +1873,5 @@ func u256FromInt64(v int64) u256 {
 		return u256{uint64(v), 0, 0, 0}
 	}
 	uv := uint64(v)
-	return u256{uv, ^uint64(0), ^uint64(0), ^uint64(0)}
+	return u256{uv, invUint64, invUint64, invUint64}
 }

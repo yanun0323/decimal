@@ -20,9 +20,9 @@ import "github.com/yanun0323/decimal"
 
 各类型有自己的固定小数尺度与精度：
 
-- `Decimal128`：尺度 `10^16`，整数 **16** 位，小数 **16** 位
-- `Decimal256`：尺度 `10^32`，整数 **32** 位，小数 **32** 位
-- `Decimal512`：尺度 `10^64`，整数 **64** 位，小数 **64** 位
+- `Decimal128`：尺度 `10^19`，整数 **19** 位，小数 **19** 位
+- `Decimal256`：尺度 `10^38`，整数 **38** 位，小数 **38** 位
+- `Decimal512`：尺度 `10^77`，整数 **77** 位，小数 **77** 位
 
 共通特性：
 
@@ -44,9 +44,9 @@ import "github.com/yanun0323/decimal"
 - **整数部分**：只保留最低 *N* 位（更高位会被丢弃）
 - **小数部分**：只保留最高 *N* 位（更低位会被丢弃）
 
-其中 *N* 为该类型的小数位精度（16/32/64）。
+其中 *N* 为该类型的小数位精度（19/38/77）。
 
-字符串/JSON 解析会**先应用指数位移**，再应用精度规则。
+字符串/JSON 解析会**先应用指数位移**，再应用精度规则（截断），最后缩放到固定尺度。
 
 ## 预设值
 
@@ -65,7 +65,7 @@ import "github.com/yanun0323/decimal"
   - 应用精度规则（整数低 *N*、小数高 *N*）。
 - `NewXXXFromString(string) (DecimalXXX, error)`
   - 支持前后空白、`_` 分隔、`.` 小数点与 `e/E` 指数。
-  - 先应用指数位移，再应用精度规则。
+  - 先应用指数位移，再应用精度规则（截断），最后缩放到固定尺度。
 - `NewXXXFromInt(int64) DecimalXXX`
   - 应用精度规则（整数低 *N*）。
 - `NewXXXFromFloat(float64) (DecimalXXX, error)`
@@ -76,17 +76,17 @@ import "github.com/yanun0323/decimal"
   - 解码后应用精度规则。
 - `NewXXXFromJSON([]byte) (DecimalXXX, error)`
   - 接受 JSON **字符串**或**数字**。
-  - 先应用指数位移，再应用精度规则。
+  - 先应用指数位移，再应用精度规则（截断），最后缩放到固定尺度。
 
 ## 转换与格式化
 
 - `Int64() (intPart, decimalPart int64)`
-  - `decimalPart` 以类型尺度返回（`10^16` / `10^32` / `10^64`）。
+  - `decimalPart` 以类型尺度返回（`10^19` / `10^38` / `10^77`）。
 - `Float64() float64`
 - `String() string`
   - 自动移除小数尾端多余 0。
 - `StringFixed(n int) string`
-  - `n > scaleDigits` 会截断到类型尺度（16/32/64）。
+  - `n > scaleDigits` 会截断到类型尺度（19/38/77）。
   - `n <= 0` 只返回整数部分。
 
 ### 零分配追加
@@ -115,7 +115,7 @@ import "github.com/yanun0323/decimal"
 - `RoundAwayFromZero`, `RoundTowardToZero`
 - `Ceil`, `Floor`
 
-数位操作规则（scaleDigits = 16/32/64）：
+数位操作规则（scaleDigits = 19/38/77）：
 
 - `n > scaleDigits`：不变
 - `n <= -scaleDigits`：返回 0
